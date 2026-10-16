@@ -13,6 +13,9 @@ function Thumb({ pdf, index, active, count }: { pdf: PDFDocumentProxy; index: nu
   useEffect(() => {
     const el = host.current;
     if (!el) return;
+    // a different document: drop the old picture and draw again
+    done.current = false;
+    el.replaceChildren();
     // render lazily, only once the thumbnail scrolls into view
     const io = new IntersectionObserver(async ([entry]) => {
       if (!entry.isIntersecting || done.current) return;

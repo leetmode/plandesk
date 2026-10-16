@@ -90,7 +90,8 @@ function buildMenu() {
         { label: 'Save', accelerator: 'CmdOrCtrl+S', click: send('save') },
         { label: 'Save As…', accelerator: 'CmdOrCtrl+Shift+S', click: send('saveAs') },
         { type: 'separator' },
-        isMac ? { role: 'close' } : { role: 'quit' },
+        { label: 'Close Tab', accelerator: 'CmdOrCtrl+W', click: send('closeTab') },
+        isMac ? { role: 'close', accelerator: 'Cmd+Shift+W' } : { role: 'quit' },
       ],
     },
     {
@@ -120,10 +121,9 @@ async function writeAtomic(target, bytes) {
 }
 
 ipcMain.handle('open-pdf', async () => {
-  const r = await dialog.showOpenDialog(win, { properties: ['openFile'], filters: [{ name: 'PDF', extensions: ['pdf'] }] });
-  if (r.canceled || !r.filePaths[0]) return null;
-  const p = r.filePaths[0];
-  return { name: path.basename(p), path: p, bytes: new Uint8Array(await fs.readFile(p)) };
+  const r = await dialog.showOpenDialog(win, { properties: ['openFile', 'multiSelections'], filters: [{ name: 'PDF', extensions: ['pdf'] }] });
+  if (r.canceled) return [];
+  return Promise.all(r.filePaths.map(async (p) => ({ name: path.basename(p), path: p, bytes: new Uint8Array(await fs.readFile(p)) })));
 });
 
 ipcMain.handle('read-path', async (_e, p) => {

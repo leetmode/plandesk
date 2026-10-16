@@ -7,7 +7,7 @@ export interface OpenedFile {
 }
 
 interface Bridge {
-  openPdf(): Promise<OpenedFile | null>;
+  openPdf(): Promise<OpenedFile[]>;
   readPath(path: string): Promise<OpenedFile>;
   savePdf(bytes: Uint8Array, path: string | null, suggestedName: string): Promise<string | null>;
   saveText(text: string, suggestedName: string, filterName: string, ext: string): Promise<string | null>;
@@ -27,12 +27,13 @@ declare global {
 const bridge = () => window.plandesk;
 export const isDesktop = () => !!bridge();
 
-function pickFile(accept: string): Promise<File | null> {
+function pickFiles(accept: string): Promise<File[]> {
   return new Promise((resolve) => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = accept;
-    input.onchange = () => resolve(input.files?.[0] ?? null);
+    input.multiple = true;
+    input.onchange = () => resolve([...(input.files ?? [])]);
     input.click();
   });
 }
@@ -51,11 +52,11 @@ export async function fileToOpened(file: File): Promise<OpenedFile> {
   return { name: file.name, path, bytes: new Uint8Array(await file.arrayBuffer()) };
 }
 
-export async function openPdf(): Promise<OpenedFile | null> {
+// Lets the user pick one or more PDFs; empty if cancelled.
+export async function openPdfs(): Promise<OpenedFile[]> {
   const b = bridge();
   if (b) return b.openPdf();
-  const file = await pickFile('application/pdf,.pdf');
-  return file ? fileToOpened(file) : null;
+  return Promise.all((await pickFiles('application/pdf,.pdf')).map(fileToOpened));
 }
 
 export const readPath = (path: string) => bridge()!.readPath(path);

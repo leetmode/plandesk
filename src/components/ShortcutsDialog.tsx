@@ -7,7 +7,9 @@ const OTHER: { label: string; keys: [string, string][] }[] = [
   {
     label: 'File & edit',
     keys: [
-      ['Ctrl+O', 'Open'],
+      ['Ctrl+O', 'Open (one or more PDFs, each in a tab)'],
+      ['Ctrl+W', 'Close tab'],
+      ['Ctrl+Tab / Ctrl+Shift+Tab', 'Next / previous tab'],
       ['Ctrl+S', 'Save'],
       ['Ctrl+Shift+S', 'Save as'],
       ['Ctrl+Z / Ctrl+Y', 'Undo / redo'],

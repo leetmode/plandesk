@@ -264,3 +264,14 @@ tr.sel { background: var(--accent-soft) !important; }
 .shortcut-cols h4 { margin: 8px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted, #8b95a5); }
 .shortcut-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; font-size: 13px; }
 .shortcut-row kbd { min-width: 34px; text-align: center; font: 600 11px/1.6 ui-monospace, Consolas, monospace; padding: 0 5px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; background: rgba(255, 255, 255, 0.06); white-space: nowrap; }
+
+/* document tabs */
+.doc-tabs { display: flex; align-items: flex-end; gap: 2px; padding: 4px 8px 0; background: var(--bg); border-bottom: 1px solid var(--border); overflow-x: auto; flex-shrink: 0; }
+.doc-tab { display: flex; align-items: center; gap: 6px; max-width: 220px; min-width: 90px; padding: 5px 4px 5px 12px; border: 1px solid var(--border); border-bottom: none; border-radius: 6px 6px 0 0; background: var(--panel); color: var(--muted); cursor: default; user-select: none; }
+.doc-tab:hover { color: var(--text); }
+.doc-tab.active { background: var(--panel-2); color: var(--text); box-shadow: inset 0 2px 0 var(--accent); }
+.doc-tab-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.doc-tab-dirty { color: var(--warn); font-size: 10px; }
+.doc-tab-close { padding: 0 6px; line-height: 18px; font-size: 15px; color: var(--muted); }
+.doc-tab-close:hover { background: var(--border); color: var(--text); }
+.doc-tab-new { margin: 0 0 3px 4px; padding: 2px 9px; font-size: 16px; color: var(--muted); }

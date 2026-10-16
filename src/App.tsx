@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useDoc } from './store';
 import type { Markup } from './types';
-import { openDocument, type PDFDocumentProxy } from './lib/pdfjs';
+import { openDocument } from './lib/pdfjs';
 import { loadPdf, savePdf } from './lib/pdfio';
 import * as platform from './lib/platform';
 import { hasText, newId, translate } from './lib/markups';
@@ -9,46 +9,52 @@ import { DEFAULT_SCALE } from './lib/measure';
 import { Toolbar, TOOL_KEYS } from './components/Toolbar';
 import { Viewer } from './components/Viewer';
 import { Sidebar } from './components/Thumbnails';
-import type { OcConfig } from './components/PageView';
 import { rotateView, toggleFullscreen } from './components/ViewMenu';
 import { Properties } from './components/Properties';
 import { MarkupsList } from './components/MarkupsList';
 import { ScaleDialog } from './components/ScaleDialog';
 import { ShortcutsDialog } from './components/ShortcutsDialog';
 import { Icon } from './components/Icon';
+import { TabBar } from './components/TabBar';
+import { useTabs, addTab, closeTab, switchTab, anyDirty } from './tabs';
 
 let clipboard: Markup[] = [];
 
 export default function App() {
   const s = useDoc();
-  const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
-  const [oc, setOc] = useState<OcConfig | null>(null);
+  const tabs = useTabs((t) => t.tabs);
+  const activeId = useTabs((t) => t.active);
+  const current = tabs.find((t) => t.id === activeId);
+  const pdf = current?.pdf ?? null;
+  const oc = current?.oc ?? null;
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
-  const pdfRef = useRef<PDFDocumentProxy | null>(null);
 
   useEffect(() => {
     if (!s.author) platform.userName().then((n) => useDoc.setState({ author: n }));
   }, [s.author]);
 
   useEffect(() => {
-    platform.setDirty(s.dirty, s.fileName ? `${s.fileName} - PlanDesk` : 'PlanDesk');
-  }, [s.dirty, s.fileName]);
+    // the window warns on close if any tab has unsaved changes
+    platform.setDirty(anyDirty(s.dirty), s.fileName ? `${s.fileName} - PlanDesk` : 'PlanDesk');
+  }, [s.dirty, s.fileName, tabs]);
 
+  // each PDF opens in its own tab; a file that's already open just gets focused
   const openBytes = useCallback(async (file: platform.OpenedFile) => {
-    const st = useDoc.getState();
-    if (st.dirty && !window.confirm('Discard unsaved changes to the current document?')) return;
+    const { tabs } = useTabs.getState();
+    const existing = file.path && tabs.find((t) => (t.parked ?? useDoc.getState()).filePath === file.path);
+    if (existing) {
+      switchTab(existing.id);
+      return;
+    }
     setBusy(`Opening ${file.name}…`);
     setError(null);
     try {
       const loaded = await loadPdf(file.bytes);
       const doc = await openDocument(loaded.renderBytes);
-      pdfRef.current?.loadingTask.destroy();
-      pdfRef.current = doc;
       const layers = await doc.getOptionalContentConfig().catch(() => null);
-      setOc(layers && [...layers].length ? layers : null);
-      setPdf(doc);
+      addTab(doc, layers && [...layers].length ? layers : null);
       useDoc.getState().setDocument({
         fileName: file.name,
         filePath: file.path,
@@ -66,9 +72,16 @@ export default function App() {
   }, []);
 
   const open = useCallback(async () => {
-    const f = await platform.openPdf();
-    if (f) await openBytes(f);
+    for (const f of await platform.openPdfs()) await openBytes(f);
   }, [openBytes]);
+
+  const close = useCallback((id: string) => {
+    const t = useTabs.getState().tabs.find((x) => x.id === id);
+    if (!t) return;
+    const d = t.parked ?? useDoc.getState();
+    if (d.dirty && !window.confirm(`Close ${d.fileName ?? 'this document'} and discard unsaved changes?`)) return;
+    closeTab(id);
+  }, []);
 
   const save = useCallback(async (saveAs = false) => {
     const st = useDoc.getState();
@@ -100,10 +113,14 @@ export default function App() {
       if (cmd === 'open') open();
       else if (cmd === 'save') save();
       else if (cmd === 'saveAs') save(true);
+      else if (cmd === 'closeTab') {
+        const id = useTabs.getState().active;
+        if (id) close(id);
+      }
       else if (cmd === 'undo') useDoc.getState().undo();
       else if (cmd === 'redo') useDoc.getState().redo();
     });
-  }, [open, save, openBytes]);
+  }, [open, save, openBytes, close]);
 
   // keyboard shortcuts
   useEffect(() => {
@@ -125,6 +142,21 @@ export default function App() {
       if (mod && k === 's') {
         e.preventDefault();
         save(e.shiftKey);
+        return;
+      }
+      if (mod && k === 'w') {
+        e.preventDefault();
+        const id = useTabs.getState().active;
+        if (id) close(id);
+        return;
+      }
+      if (e.ctrlKey && (e.key === 'Tab' || e.key === 'PageDown' || e.key === 'PageUp')) {
+        // next / previous tab
+        e.preventDefault();
+        const { tabs, active } = useTabs.getState();
+        const back = e.key === 'PageUp' || (e.key === 'Tab' && e.shiftKey);
+        const i = tabs.findIndex((t) => t.id === active);
+        if (tabs.length > 1) switchTab(tabs[(i + (back ? -1 : 1) + tabs.length) % tabs.length].id);
         return;
       }
       if (typing || !st.baseBytes) return;
@@ -200,13 +232,12 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [open, save]);
+  }, [open, save, close]);
 
   const onDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
-    const file = [...e.dataTransfer.files].find((f) => /\.pdf$/i.test(f.name));
-    if (file) await openBytes(await platform.fileToOpened(file));
+    for (const file of [...e.dataTransfer.files].filter((f) => /\.pdf$/i.test(f.name))) await openBytes(await platform.fileToOpened(file));
   };
 
   const scale = s.scales[s.page] ?? DEFAULT_SCALE;
@@ -222,11 +253,12 @@ export default function App() {
       onDrop={onDrop}
     >
       <Toolbar onOpen={open} onSave={save} />
+      <TabBar onOpen={open} onClose={close} />
       <div className="main">
-        {s.showThumbs && <Sidebar pdf={pdf} oc={oc} />}
+        {s.showThumbs && <Sidebar key={activeId} pdf={pdf} oc={oc} />}
         <div className="center">
           {pdf ? (
-            <Viewer pdf={pdf} oc={oc} />
+            <Viewer key={activeId} pdf={pdf} oc={oc} />
           ) : (
             <div className="welcome">
               <h1>PlanDesk</h1>
@@ -234,7 +266,7 @@ export default function App() {
               <button className="primary big" onClick={open}>
                 <Icon name="open" /> Open a PDF
               </button>
-              <p className="hint">…or drag a PDF onto this window.</p>
+              <p className="hint">…or drag PDFs onto this window. Each one opens in its own tab.</p>
             </div>
           )}
           {s.showList && pdf && <MarkupsList />}
