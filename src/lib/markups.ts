@@ -15,6 +15,7 @@ export const TYPE_LABEL: Record<MarkupType, string> = {
   text: 'Text Box',
   callout: 'Callout',
   cloudplus: 'Cloud+',
+  note: 'Note',
   length: 'Length',
   polylength: 'Polylength',
   area: 'Area',
@@ -37,6 +38,7 @@ export const DEFAULT_STYLES: Record<MarkupType, StyleDefaults> = {
   highlight: { color: '#ffd400', fill: '#ffd400', opacity: 1, fillOpacity: 0.4, width: 0, fontSize: 12, subject: 'Highlight' },
   text: { color: RED, fill: null, opacity: 1, fillOpacity: 1, width: 1, fontSize: 12, subject: 'Text Box' },
   callout: { color: RED, fill: '#ffffff', opacity: 1, fillOpacity: 1, width: 1, fontSize: 12, subject: 'Callout' },
+  note: { color: '#6b5200', fill: '#ffd400', opacity: 1, fillOpacity: 1, width: 1, fontSize: 12, subject: 'Note' },
   cloudplus: { color: RED, fill: null, opacity: 1, fillOpacity: 0.3, width: 2, fontSize: 12, subject: 'Cloud+' },
   length: { color: BLUE, fill: null, opacity: 1, fillOpacity: 0.3, width: 1.5, fontSize: 10, subject: 'Length Measurement' },
   polylength: { color: BLUE, fill: null, opacity: 1, fillOpacity: 0.3, width: 1.5, fontSize: 10, subject: 'Polylength Measurement' },
@@ -74,6 +76,30 @@ export function textBox(m: Markup): Box {
   if (m.type === 'cloudplus') return boxFrom(m.points[2] ?? m.points[0], m.points[3] ?? m.points[1] ?? m.points[0]);
   return m.type === 'callout' ? boxFrom(m.points[1], m.points[2]) : boxFrom(m.points[0], m.points[1]);
 }
+
+// Sticky note icon: a speech bubble anchored at its top-left corner.
+export const NOTE_W = 30;
+export const NOTE_H = 27;
+export function noteOutline(at: Pt): Pt[] {
+  const { x, y } = at;
+  const body = NOTE_H * 0.72;
+  return [
+    { x, y },
+    { x: x + NOTE_W, y },
+    { x: x + NOTE_W, y: y + body },
+    { x: x + NOTE_W * 0.45, y: y + body },
+    { x: x + NOTE_W * 0.2, y: y + NOTE_H },
+    { x: x + NOTE_W * 0.25, y: y + body },
+    { x, y: y + body },
+  ];
+}
+
+// the two "text" lines drawn inside the note icon
+export const noteLines = (at: Pt): Pt[][] =>
+  [0.25, 0.48].map((f) => [
+    { x: at.x + NOTE_W * 0.2, y: at.y + NOTE_H * f },
+    { x: at.x + NOTE_W * 0.8, y: at.y + NOTE_H * f },
+  ]);
 
 // Markups whose text sits in a top-left aligned box that grows to fit.
 export const BOX_TEXT = new Set<MarkupType>(['text', 'callout', 'cloudplus']);

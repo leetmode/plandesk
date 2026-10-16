@@ -11,6 +11,8 @@ import {
   cloudPlusBox,
   cloudRect,
   hasText,
+  NOTE_H,
+  NOTE_W,
   CLOSED_TYPES,
   isMarkupTool,
   LINE_HEIGHT,
@@ -253,6 +255,11 @@ function PageViewImpl(props: Props) {
     const list = useDoc.getState().markups.filter((m) => m.page === index);
     for (let i = list.length - 1; i >= 0; i--) {
       const m = list[i];
+      if (m.type === 'note') {
+        const a = m.points[0];
+        if (pt.x >= a.x - tol && pt.x <= a.x + NOTE_W + tol && pt.y >= a.y - tol && pt.y <= a.y + NOTE_H + tol) return m;
+        continue;
+      }
       if (m.type === 'cloudplus') {
         const near = (bx: { x: number; y: number; w: number; h: number }) => pt.x >= bx.x - tol && pt.x <= bx.x + bx.w + tol && pt.y >= bx.y - tol && pt.y <= bx.y + bx.h + tol;
         if (near(cloudRect(m)) || (m.points.length >= 4 && near(textBox(m)))) return m;
@@ -317,6 +324,16 @@ function PageViewImpl(props: Props) {
         if (!e.shiftKey) useDoc.setState({ selection: [] });
         drag.current = { mode: 'marquee', start: pt, additive: e.shiftKey };
       }
+      return;
+    }
+
+    if (tool === 'note') {
+      // drop a sticky note and jump to its comment field
+      const m = makeMarkup('note', index, [{ x: pt.x - 4, y: pt.y - NOTE_H }], style('note'), st.author);
+      st.add(m);
+      useDoc.setState({ selection: [m.id], showProps: true });
+      finishTool();
+      setTimeout(() => (document.querySelector('.props textarea[data-field="comment"]') as HTMLTextAreaElement | null)?.focus(), 50);
       return;
     }
 

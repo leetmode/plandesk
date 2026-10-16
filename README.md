@@ -7,7 +7,7 @@ PDF markup and takeoff for construction drawings. Windows and macOS desktop app
 
 - **Markups:** pen, line, arrow, rectangle, ellipse, polyline, polygon, revision
   cloud (rectangle and polygon), Cloud+ (cloud with a leader to a text box),
-  highlight, text box, callout
+  highlight, text box, callout, sticky note
 - **Measurements:** calibrate scale (draw along a known dimension) or pick a preset
   (architectural, engineering, metric); length, polylength, area, count
 - **Markups list:** sortable and filterable, with status (Open / Accepted / Rejected /
@@ -18,7 +18,10 @@ PDF markup and takeoff for construction drawings. Windows and macOS desktop app
   streams and ISO 32000 `/Measure` scale data, so they show up in Bluebeam Revu,
   Acrobat and browsers. Annotations made in those programs (squares, clouds,
   lines, polylines, polygons, ink, free text and callouts, highlights, and
-  measurements) open as editable markups.
+  measurements, sticky notes) open as editable markups. Reply threads are folded
+  into the markup's comment, and review status set in Revu or Acrobat
+  (Accepted / Rejected / Completed) carries over. Rich-text comments and Revu's
+  text box font and color settings are read too.
 - **Text in shapes:** double-click a cloud, rectangle, ellipse or polygon (or
   select it and press Enter) to type centered text inside it
 - **View menu:** single page, continuous, side-by-side and continuous
@@ -46,6 +49,7 @@ PDF markup and takeoff for construction drawings. Windows and macOS desktop app
 | C | Cloud | ? | Shortcut list |
 | Shift+C | Polygon cloud | Esc | Cancel / finish count |
 | B | Cloud+ | Z | Zoom to selection |
+| O | Note | | |
 
 Click-to-place tools (polyline, polygon, polygon cloud, polylength, area): click
 each vertex, then double-click or press Enter to finish. Backspace removes the

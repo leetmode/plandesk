@@ -19,6 +19,7 @@ export type MarkupType =
   | 'text'
   | 'callout'
   | 'cloudplus'
+  | 'note'
   | 'length'
   | 'polylength'
   | 'area'
@@ -34,6 +35,7 @@ export interface Markup {
   // rect/ellipse/cloud/highlight/text: two opposite corners
   // callout: [leader tip, box corner, box corner]
   // cloudplus: [cloud corner, cloud corner, box corner, box corner]
+  // note: [icon top-left]
   // others: the vertices, in order
   points: Pt[];
   color: string;

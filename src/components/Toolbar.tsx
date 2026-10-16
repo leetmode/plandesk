@@ -20,6 +20,7 @@ export const TOOL_KEYS: Record<string, Tool> = {
   n: 'polylength',
   g: 'area',
   k: 'count',
+  o: 'note',
   s: 'calibrate',
   'shift+l': 'polyline',
   'shift+r': 'polygon',
@@ -66,6 +67,7 @@ export const GROUPS: { label: string; tools: { id: Tool; title: string }[] }[] =
       { id: 'highlight', title: 'Highlight' },
       { id: 'text', title: 'Text Box' },
       { id: 'callout', title: 'Callout (drag from the arrow tip to the box)' },
+      { id: 'note', title: 'Note (click to drop a sticky-note comment)' },
     ],
   },
   {

@@ -7,8 +7,10 @@
 // streams, ISO 32000 /Measure dictionaries for measurements, and our own JSON
 // under /PlanDesk so a round trip is lossless.
 import {
+  decodePDFRawStream,
   PDFArray,
   PDFDict,
+  PDFRawStream,
   PDFDocument,
   PDFHexString,
   PDFName,
@@ -33,7 +35,7 @@ import {
   wrapText,
   type Seg,
 } from './geometry';
-import { calloutLeader, cloudPlusLeader, cloudRect, DEFAULT_STYLES, labelAnchor, LINE_HEIGHT, newId, shapeTextBox, TEXT_SHAPES, textBox, TYPE_LABEL } from './markups';
+import { calloutLeader, cloudPlusLeader, cloudRect, DEFAULT_STYLES, noteLines, noteOutline, labelAnchor, LINE_HEIGHT, newId, shapeTextBox, TEXT_SHAPES, textBox, TYPE_LABEL } from './markups';
 import { DEFAULT_SCALE, isMetric, measureMarkup } from './measure';
 
 const KEY = PDFName.of('PlanDesk');
@@ -146,6 +148,23 @@ const toPdfDate = (iso: string) => {
   return `D:${d.getUTCFullYear()}${p(d.getUTCMonth() + 1)}${p(d.getUTCDate())}${p(d.getUTCHours())}${p(d.getUTCMinutes())}${p(d.getUTCSeconds())}Z`;
 };
 
+// Comment text: /Contents, or the rich text (/RC, XHTML) that Revu and Acrobat also write.
+function contentsOf(doc: PDFDocument, dict: PDFDict): string {
+  const plain = text(doc, dict.get(PDFName.of('Contents')));
+  if (plain.trim()) return plain;
+  const rc = lookup(doc, dict.get(PDFName.of('RC')));
+  // /RC is a text string, or sometimes a stream
+  const xhtml = rc instanceof PDFRawStream ? new TextDecoder().decode(decodePDFRawStream(rc).decode()) : text(doc, rc);
+  return xhtml
+    .replace(/<br\s*\/?>|<\/p>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')
+    .trim();
+}
+
+// Review states set by replies (ISO 32000 /StateModel /Review), as written by Revu and Acrobat.
+const REVIEW_STATE: Record<string, Status> = { Accepted: 'Accepted', Rejected: 'Rejected', Completed: 'Completed', Cancelled: 'None', None: 'None' };
+
 const STATUS_SET = new Set<Status>(['None', 'Open', 'Accepted', 'Rejected', 'Completed']);
 
 // Converts an annotation written by another program (Revu, Acrobat, ...) into a Markup.
@@ -216,9 +235,17 @@ function importForeign(doc: PDFDocument, dict: PDFDict, pageIndex: number, inv: 
       type = 'pen';
       break;
     }
+    case 'Text': {
+      // sticky note; replies (/IRT) are folded into their parent markup instead
+      if (!rect || dict.has(PDFName.of('IRT'))) return null;
+      const b = bounds(toPage([{ x: rect[0], y: rect[1] }, { x: rect[2], y: rect[3] }]));
+      type = 'note';
+      points = [{ x: b.x, y: b.y }];
+      break;
+    }
     case 'FreeText': {
       if (!rect) return null;
-      textValue = text(doc, dict.get(PDFName.of('Contents')));
+      textValue = contentsOf(doc, dict);
       const cl = numbers(doc, dict.get(PDFName.of('CL')));
       const box = rectPts(rect);
       if ((it === 'FreeTextCallout' || cl) && cl && cl.length >= 4) {
@@ -242,7 +269,7 @@ function importForeign(doc: PDFDocument, dict: PDFDict, pageIndex: number, inv: 
     default:
       return null;
   }
-  if (!type || points.length < 2) return null;
+  if (!type || points.length < (type === 'note' ? 1 : 2)) return null;
 
   const style = DEFAULT_STYLES[type];
   const c = colorFromArray(numbers(doc, dict.get(PDFName.of('C'))));
@@ -259,6 +286,12 @@ function importForeign(doc: PDFDocument, dict: PDFDict, pageIndex: number, inv: 
     if (col) color = rgbToHex([+col[1], +col[2], +col[3]]);
     const size = da.match(/([\d.]+)\s+Tf/);
     if (size && +size[1] > 0) fontSize = +size[1];
+    // the default style string (/DS, CSS-like) wins when present, e.g. "font: Helvetica 10pt; color:#FF0000"
+    const ds = text(doc, dict.get(PDFName.of('DS')));
+    const dsSize = ds.match(/font[^;]*?([\d.]+)pt/i);
+    if (dsSize && +dsSize[1] > 0) fontSize = +dsSize[1];
+    const dsColor = ds.match(/(?:^|;)\s*color\s*:\s*#([0-9a-f]{6})/i);
+    if (dsColor) color = '#' + dsColor[1].toLowerCase();
   }
   const modified = pdfDate(text(doc, dict.get(PDFName.of('M'))));
   return {
@@ -274,7 +307,7 @@ function importForeign(doc: PDFDocument, dict: PDFDict, pageIndex: number, inv: 
     text: textValue,
     fontSize,
     subject: text(doc, dict.get(PDFName.of('Subj'))) || TYPE_LABEL[type],
-    comment: sub === 'FreeText' ? '' : text(doc, dict.get(PDFName.of('Contents'))),
+    comment: sub === 'FreeText' ? '' : contentsOf(doc, dict),
     author: text(doc, dict.get(PDFName.of('T'))),
     status: 'None',
     created: modified,
@@ -321,6 +354,7 @@ export async function loadPdf(bytes: Uint8Array): Promise<LoadedPdf> {
     if (!annots) return;
     const inv = invert(pageMatrix(page));
     const removed = new Set<PDFDict>();
+    const lifted = new Map<PDFDict, Markup>();
     for (let i = 0; i < annots.size(); i++) {
       const dict = lookup(doc, annots.get(i));
       if (!(dict instanceof PDFDict)) continue;
@@ -341,6 +375,27 @@ export async function loadPdf(bytes: Uint8Array): Promise<LoadedPdf> {
         if (s) scales[pageIndex] = s;
       }
       markups.push(m);
+      removed.add(dict);
+      lifted.set(dict, m);
+    }
+    // replies and review-status changes made on lifted markups
+    for (let i = 0; i < annots.size(); i++) {
+      const dict = lookup(doc, annots.get(i));
+      if (!(dict instanceof PDFDict) || removed.has(dict)) continue;
+      const parent = lookup(doc, dict.get(PDFName.of('IRT')));
+      const m = parent instanceof PDFDict ? lifted.get(parent) : undefined;
+      if (!m) continue;
+      const state = text(doc, dict.get(PDFName.of('State'))) || name(doc, dict.get(PDFName.of('State')));
+      const model = text(doc, dict.get(PDFName.of('StateModel'))) || name(doc, dict.get(PDFName.of('StateModel')));
+      if (state && model !== 'Marked') {
+        if (state in REVIEW_STATE) m.status = REVIEW_STATE[state];
+      } else {
+        const body = contentsOf(doc, dict);
+        if (body) {
+          const who = text(doc, dict.get(PDFName.of('T')));
+          m.comment = [m.comment, `${who ? who + ': ' : ''}${body}`].filter(Boolean).join('\n\n');
+        }
+      }
       removed.add(dict);
     }
     if (!removed.size) return;
@@ -482,6 +537,13 @@ function draw(m: Markup, scale: PageScale, font: PDFFont): Drawing {
         d.extent.push({ x: pt.x - r - 1, y: pt.y - r - m.fontSize }, { x: pt.x + r + font.widthOfTextAtSize(String(i + 1), m.fontSize) + 4, y: pt.y + r + 1 });
       });
       break;
+    case 'note': {
+      const outline = noteOutline(p[0]);
+      strokeFill(polySegs(outline, true), m, d);
+      for (const l of noteLines(p[0])) strokeFill(polySegs(l, false), m, d, { fill: false });
+      d.extent.push(...outline);
+      break;
+    }
     case 'cloudplus': {
       const arc = Math.max(8, m.width * 6);
       const c = cloudRect(m);
@@ -540,6 +602,7 @@ const SUBTYPE: Record<MarkupType, string> = {
   text: 'FreeText',
   callout: 'FreeText',
   cloudplus: 'Square',
+  note: 'Text',
   count: 'Stamp',
 };
 
@@ -647,6 +710,9 @@ export async function savePdf(baseBytes: Uint8Array, markups: Markup[], scales: 
       }
       case 'count':
         entries.Name = 'PlanDeskCount';
+        break;
+      case 'note':
+        entries.Name = 'Comment';
         break;
     }
     if (m.type === 'cloud' || m.type === 'polycloud' || m.type === 'cloudplus') entries.BE = { S: 'C', I: 1 };

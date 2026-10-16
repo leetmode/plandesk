@@ -95,7 +95,7 @@ export function Properties() {
         {selected.length === 1 && (
           <>
             <label>Comment</label>
-            <textarea rows={4} value={first.comment} onChange={(e) => update({ comment: e.target.value })} />
+            <textarea rows={4} data-field="comment" value={first.comment} onChange={(e) => update({ comment: e.target.value })} />
             <div className="meta">
               {first.author || 'Unknown author'} · {new Date(first.modified).toLocaleString()}
             </div>

@@ -15,6 +15,7 @@ const PATHS: Record<string, string> = {
   text: 'M5 5h14M12 5v14M9 19h6',
   callout: 'M10 6h10v8H10zM10 12l-6 6',
   cloudplus: 'M3 13a1.5 1.5 0 013 0 1.5 1.5 0 013 0 1.5 1.5 0 010 3 1.5 1.5 0 01-3 0 1.5 1.5 0 01-3 0 1.5 1.5 0 010-3zM9 13l4-5M13 4h8v6h-8z',
+  note: 'M4 4h16v11H11l-5 5v-5H4zM8 8h8M8 11h6',
   keyboard: 'M3 6h18v12H3zM7 10h.01M11 10h.01M15 10h.01M8 14h8',
   crosshair: 'M12 3v18M3 12h18M12 8a4 4 0 100 8 4 4 0 000-8z',
   length: 'M4 12h16M4 8v8M20 8v8M8 12v2M12 12v3M16 12v2',

@@ -127,6 +127,48 @@ describe('pdf round trip', () => {
     const render = await PDFDocument.load(loaded.renderBytes);
     expect(render.getPages()[0].node.Annots()!.size()).toBe(1);
   });
+
+  it('reads Revu-style comments: sticky notes, replies, review status, rich text', async () => {
+    const doc = await PDFDocument.create();
+    const page = doc.addPage([1000, 800]);
+    const ctx = doc.context;
+    const cloud = ctx.register(ctx.obj({
+      Type: 'Annot', Subtype: 'Polygon', Rect: [100, 500, 300, 700], Vertices: [100, 500, 300, 500, 300, 700], C: [1, 0, 0],
+      BE: { S: 'C', I: 1 }, T: PDFString.of('PM'), Contents: PDFString.of('Check this'),
+    }));
+    const reply = ctx.obj({ Type: 'Annot', Subtype: 'Text', Rect: [0, 0, 20, 20], IRT: cloud, T: PDFString.of('Architect'), Contents: PDFString.of('Revised on A-101 rev 3') });
+    const state = ctx.obj({ Type: 'Annot', Subtype: 'Text', Rect: [0, 0, 20, 20], IRT: cloud, T: PDFString.of('PM'), State: PDFString.of('Accepted'), StateModel: PDFString.of('Review') });
+    const note = ctx.obj({
+      Type: 'Annot', Subtype: 'Text', Rect: [500, 600, 520, 620], T: PDFString.of('Super'), Name: 'Comment',
+      RC: PDFString.of('<?xml version="1.0"?><body xmlns="http://www.w3.org/1999/xhtml"><p>Field verify <b>slab</b> &amp; curb</p></body>'),
+    });
+    const box = ctx.obj({
+      Type: 'Annot', Subtype: 'FreeText', Rect: [600, 100, 800, 160], Contents: PDFString.of('GC NOTE'),
+      DA: PDFString.of('/Helv 12 Tf 0 0 0 rg'), DS: PDFString.of('font: Helvetica 18pt; text-align:left; color:#0000FF'),
+    });
+    page.node.addAnnot(cloud);
+    for (const a of [reply, state, note, box]) page.node.addAnnot(ctx.register(a));
+
+    const loaded = await loadPdf(await doc.save());
+    expect(loaded.markups.map((m) => m.type).sort()).toEqual(['note', 'polycloud', 'text']);
+    const c = loaded.markups.find((m) => m.type === 'polycloud')!;
+    expect(c.comment).toBe('Check this\n\nArchitect: Revised on A-101 rev 3');
+    expect(c.status).toBe('Accepted');
+    const n = loaded.markups.find((m) => m.type === 'note')!;
+    expect(n.comment).toBe('Field verify slab & curb');
+    expect(n.author).toBe('Super');
+    expect(n.points).toEqual([{ x: 500, y: 180 }]);
+    const tb = loaded.markups.find((m) => m.type === 'text')!;
+    expect(tb.fontSize).toBe(18);
+    expect(tb.color).toBe('#0000ff');
+    // replies are gone from the render copy along with their parent
+    const render = await PDFDocument.load(loaded.renderBytes);
+    expect(render.getPages()[0].node.Annots()?.size() ?? 0).toBe(0);
+
+    // a note survives our own save and reopen
+    const again = (await loadPdf(await savePdf(loaded.renderBytes, loaded.markups, {}))).markups.find((m) => m.type === 'note')!;
+    expect(again.comment).toBe(n.comment);
+  });
 });
 
 describe('text in shapes', () => {

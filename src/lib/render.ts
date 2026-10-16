@@ -13,7 +13,7 @@ import {
   wrapText,
   type Box,
 } from './geometry';
-import { calloutLeader, cloudPlusLeader, cloudRect, labelAnchor, LINE_HEIGHT, shapeTextBox, TEXT_SHAPES, textBox } from './markups';
+import { calloutLeader, cloudPlusLeader, cloudRect, labelAnchor, noteLines, noteOutline, LINE_HEIGHT, shapeTextBox, TEXT_SHAPES, textBox } from './markups';
 import { measureMarkup } from './measure';
 
 export type Part =
@@ -86,6 +86,11 @@ export function planMarkup(m: Markup, scale: PageScale, measure: (s: string, siz
         out.push({ kind: 'text', x: pt.x + 7, y: pt.y - 6 - m.fontSize * 0.6, lines: [String(i + 1)], size: m.fontSize * 0.8 });
       });
       break;
+    case 'note': {
+      shape(segsToSvg(polySegs(noteOutline(p[0]), true)));
+      noteLines(p[0]).forEach(line);
+      break;
+    }
     case 'cloudplus': {
       shape(segsToSvg(cloudSegs(rectCorners(cloudRect(m)), Math.max(8, m.width * 6))));
       if (p.length < 4) break;

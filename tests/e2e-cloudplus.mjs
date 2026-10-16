@@ -126,6 +126,15 @@ results.crosshair = (await page.$$('.crosshair-h, .crosshair-v')).length;
 await page.screenshot({ path: out('25-crosshair.png') });
 await page.keyboard.press('x');
 
+// 8b) sticky note (O): click, then type straight into the comment field
+await page.keyboard.press('o');
+await page.mouse.click(...(await S(...F(70, 50))));
+await page.waitForTimeout(150);
+await page.keyboard.type('Field verify ceiling height');
+results.noteFocused = await page.evaluate(() => document.activeElement?.getAttribute('data-field'));
+await page.keyboard.press('Escape');
+await page.screenshot({ path: out('27-note.png') });
+
 // 9) save, reopen: Cloud+ text and geometry survive
 await app.evaluate(({ dialog }, target) => {
   dialog.showSaveDialog = async () => ({ canceled: false, filePath: target });
@@ -148,6 +157,7 @@ const ln = saved.find((m) => m.type === 'line');
 results.cloudPlus = cp && { points: cp.points, text: cp.text };
 results.cloudCorner = [cx, cy];
 results.lineStart = ln?.points[0];
+results.note = saved.find((m) => m.type === 'note')?.comment;
 
 results.errors = errors;
 console.log(JSON.stringify(results, null, 2));
