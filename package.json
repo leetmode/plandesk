@@ -1,7 +1,7 @@
 {
   "name": "plandesk",
   "productName": "PlanDesk",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "PDF markup and takeoff for construction plans",
   "private": true,
   "type": "module",
