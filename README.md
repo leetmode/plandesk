@@ -3,6 +3,22 @@
 PDF markup and takeoff for construction drawings. Windows and macOS desktop app
 (Electron + React + PDF.js), written from scratch.
 
+## Download
+
+Get the latest installers from the [Releases page](https://github.com/leetmode/plandesk/releases/latest):
+
+- **Windows:** `PlanDesk-Setup-<version>.exe`. Windows may show "Windows protected your PC"
+  because the app isn't code-signed yet: click **More info → Run anyway**.
+- **Mac (Apple Silicon M1/M2/M3/M4):** `PlanDesk-<version>-arm64.dmg`
+- **Mac (Intel):** `PlanDesk-<version>-x64.dmg`
+
+  Open the .dmg and drag PlanDesk to Applications. The first time, macOS will block it
+  because it isn't notarized: right-click PlanDesk in Applications → **Open** → **Open**.
+  If it says the app "is damaged", run `xattr -cr /Applications/PlanDesk.app` in Terminal.
+
+Installers are built by GitHub Actions whenever a version tag is pushed:
+`npm version patch && git push --follow-tags`.
+
 ## Features (v0.2.1)
 
 - **Markups:** pen, line, arrow, rectangle, ellipse, polyline, polygon, revision
@@ -66,7 +82,7 @@ npm run test:e2e   # drives the real Electron app, screenshots in tests/e2e-out/
 node tests/e2e-view.mjs  # shape text + view options
 node tests/e2e-cloudplus.mjs  # Cloud+, shortcut badges, side-by-side, crosshair, snap to markup
 npm run dist:win   # Windows installer -> ../../../plandesk-release/<version>/
-npm run dist:mac   # macOS .dmg (run this on a Mac)
+npm run dist:mac   # macOS .dmg (run this on a Mac; CI builds it for releases)
 ```
 
 Build output goes outside Dropbox because Dropbox locks files mid-sync and breaks
