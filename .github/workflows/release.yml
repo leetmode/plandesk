@@ -32,7 +32,8 @@ jobs:
       - run: npm test
       - run: npm run build
       # unsigned builds: no Apple / Windows code-signing certificate yet
-      - run: npx electron-builder ${{ matrix.target }} --publish never -c.directories.output=release
+      - run: npx electron-builder ${{ matrix.target }} --publish never --config.directories.output=release
+        shell: bash
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
       - uses: softprops/action-gh-release@v2
