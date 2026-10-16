@@ -17,6 +17,7 @@ import { ShortcutsDialog } from './components/ShortcutsDialog';
 import { Icon } from './components/Icon';
 import { TabBar } from './components/TabBar';
 import { useTabs, addTab, closeTab, switchTab, anyDirty } from './tabs';
+import { exportReviewReport } from './lib/exportReport';
 
 let clipboard: Markup[] = [];
 
@@ -113,6 +114,7 @@ export default function App() {
       if (cmd === 'open') open();
       else if (cmd === 'save') save();
       else if (cmd === 'saveAs') save(true);
+      else if (cmd === 'exportReport') exportReviewReport();
       else if (cmd === 'closeTab') {
         const id = useTabs.getState().active;
         if (id) close(id);
@@ -142,6 +144,11 @@ export default function App() {
       if (mod && k === 's') {
         e.preventDefault();
         save(e.shiftKey);
+        return;
+      }
+      if (mod && e.shiftKey && k === 'e') {
+        e.preventDefault();
+        exportReviewReport();
         return;
       }
       if (mod && k === 'w') {
@@ -305,7 +312,7 @@ export default function App() {
           <span>Ready</span>
         )}
         <span className="tb-spacer" />
-        {busy && <span className="busy">{busy}</span>}
+        {(busy || s.reportStatus) && <span className="busy">{busy ?? s.reportStatus}</span>}
         {error && (
           <span className="error" onClick={() => setError(null)} title="Dismiss">
             {error}

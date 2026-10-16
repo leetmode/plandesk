@@ -167,7 +167,7 @@ input:focus, select:focus, textarea:focus { outline: 1px solid var(--accent); bo
 
 /* markups list */
 .list-panel { height: 230px; display: flex; flex-direction: column; border-top: 1px solid var(--border); background: var(--panel); }
-.list-bar { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+.list-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 4px 8px; border-bottom: 1px solid var(--border); }
 .tabs { display: flex; gap: 2px; }
 .filter { width: 180px; }
 .text-btn { font-size: 12px; }

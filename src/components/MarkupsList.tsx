@@ -4,8 +4,8 @@ import type { Markup, Status } from '../types';
 import { STATUSES } from '../types';
 import { TYPE_LABEL } from '../lib/markups';
 import { DEFAULT_SCALE, formatArea, formatLength, measureMarkup } from '../lib/measure';
-import { saveText, savePdf, showFile, isDesktop } from '../lib/platform';
-import { buildReport } from '../lib/report';
+import { saveText } from '../lib/platform';
+import { exportReviewReport, listedMarkups } from '../lib/exportReport';
 import { Icon } from './Icon';
 
 type Col = 'page' | 'type' | 'subject' | 'text' | 'measurement' | 'author' | 'date' | 'status';
@@ -70,17 +70,10 @@ export function toCsv(rows: Row[], scales: Record<number, import('../types').Pag
 export function MarkupsList() {
   const s = useDoc();
   const [sort, setSort] = useState<{ col: Col; dir: 1 | -1 }>({ col: 'page', dir: 1 });
-  const [filter, setFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState<Status | 'All'>('All');
   const [tab, setTab] = useState<'list' | 'takeoff'>('list');
 
   const rows = useMemo(() => {
-    const q = filter.trim().toLowerCase();
-    const all = buildRows(s.markups, s.scales).filter((r) => {
-      if (statusFilter !== 'All' && r.m.status !== statusFilter) return false;
-      if (!q) return true;
-      return [TYPE_LABEL[r.m.type], r.m.subject, r.m.comment, r.m.text, r.m.author, r.measurement].some((v) => v.toLowerCase().includes(q));
-    });
+    const all = buildRows(listedMarkups(s), s.scales);
     const key = (r: Row): string | number => {
       switch (sort.col) {
         case 'page': return r.m.page;
@@ -97,7 +90,7 @@ export function MarkupsList() {
       const ka = key(a), kb = key(b);
       return (ka < kb ? -1 : ka > kb ? 1 : 0) * sort.dir;
     });
-  }, [s.markups, s.scales, filter, statusFilter, sort]);
+  }, [s.markups, s.scales, s.listFilter, s.listStatus, sort]);
 
   // Takeoff summary: totals per subject, kept separate per page scale unit.
   const takeoff = useMemo(() => {
@@ -119,32 +112,6 @@ export function MarkupsList() {
     await saveText(toCsv(rows, s.scales), `${base} - markups.csv`, 'CSV', 'csv');
   };
 
-  // a walk-through PDF of the comments currently listed (respects the filter)
-  const [reporting, setReporting] = useState<string | null>(null);
-  const exportReport = async () => {
-    if (!s.baseBytes || !rows.length) return;
-    const base = (s.fileName ?? 'markups').replace(/\.pdf$/i, '');
-    setReporting('Preparing report…');
-    try {
-      const bytes = await buildReport({
-        baseBytes: s.baseBytes,
-        markups: s.markups,
-        include: rows.map((r) => r.m),
-        scales: s.scales,
-        fileName: s.fileName ?? 'Drawing.pdf',
-        onProgress: (done, total) => setReporting(`Building report ${done}/${total}…`),
-      });
-      setReporting(null);
-      const written = await savePdf(bytes, null, `${base} - review comments.pdf`);
-      if (written && isDesktop()) await showFile(written);
-    } catch (e) {
-      console.error(e);
-      window.alert(`Couldn't build the report: ${(e as Error).message}`);
-    } finally {
-      setReporting(null);
-    }
-  };
-
   const pick = (m: Markup) => useDoc.setState({ page: m.page, selection: [m.id], tool: 'select', focusId: m.id });
 
   return (
@@ -160,8 +127,8 @@ export function MarkupsList() {
         </div>
         {tab === 'list' && (
           <>
-            <input className="filter" placeholder="Filter…" value={filter} onChange={(e) => setFilter(e.target.value)} />
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as Status | 'All')}>
+            <input className="filter" placeholder="Filter…" value={s.listFilter} onChange={(e) => useDoc.setState({ listFilter: e.target.value })} />
+            <select value={s.listStatus} onChange={(e) => useDoc.setState({ listStatus: e.target.value as Status | 'All' })}>
               <option>All</option>
               {STATUSES.map((st) => (
                 <option key={st}>{st}</option>
@@ -172,11 +139,11 @@ export function MarkupsList() {
         <div className="tb-spacer" />
         <button
           className="text-btn"
-          onClick={exportReport}
-          disabled={!rows.length || !!reporting}
+          onClick={exportReviewReport}
+          disabled={!rows.length || !!s.reportStatus}
           title="A PDF that walks through each comment with a zoomed, highlighted view. Easy to send to anyone. Uses the current filter."
         >
-          <Icon name="report" size={14} /> {reporting ?? 'Export review report'}
+          <Icon name="report" size={14} /> {s.reportStatus ?? 'Export review report'}
         </button>
         <button className="text-btn" onClick={exportCsv} disabled={!s.markups.length}>
           <Icon name="download" size={14} /> Export CSV

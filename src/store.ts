@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Markup, MarkupType, PageScale, StyleDefaults, Tool } from './types';
+import type { Markup, MarkupType, PageScale, Status, StyleDefaults, Tool } from './types';
 import { DEFAULT_STYLES } from './lib/markups';
 
 const HISTORY_LIMIT = 200;
@@ -53,6 +53,9 @@ export interface DocState {
   scaleDialog: { open: boolean; calibrated?: number }; // calibrated = drawn length in page units
   zoomCmd: { kind: 'fitWidth' | 'fitPage' | 'in' | 'out' | 'actual' | 'selection'; t: number } | null;
   focusId: string | null; // markup the viewer should scroll into view
+  listFilter: string; // markups list text filter (also picks what the review report covers)
+  listStatus: Status | 'All';
+  reportStatus: string | null; // progress text while a review report is being built
 
   setDocument(d: { fileName: string; filePath: string | null; baseBytes: Uint8Array; pageCount: number; markups: Markup[]; scales: Record<number, PageScale> }): void;
   markSaved(filePath: string | null, fileName: string): void;
@@ -117,6 +120,9 @@ export const useDoc = create<DocState>((set, get) => ({
   scaleDialog: { open: false },
   zoomCmd: null,
   focusId: null,
+  listFilter: '',
+  listStatus: 'All',
+  reportStatus: null,
 
   setDocument: (d) =>
     set({

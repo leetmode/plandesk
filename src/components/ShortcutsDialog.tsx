@@ -12,6 +12,7 @@ const OTHER: { label: string; keys: [string, string][] }[] = [
       ['Ctrl+Tab / Ctrl+Shift+Tab', 'Next / previous tab'],
       ['Ctrl+S', 'Save'],
       ['Ctrl+Shift+S', 'Save as'],
+      ['Ctrl+Shift+E', 'Export review report'],
       ['Ctrl+Z / Ctrl+Y', 'Undo / redo'],
       ['Ctrl+C / X / V', 'Copy / cut / paste markups'],
       ['Ctrl+A', 'Select all on this page'],

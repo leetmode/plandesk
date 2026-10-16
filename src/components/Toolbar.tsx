@@ -1,4 +1,5 @@
 import { useDoc } from '../store';
+import { exportReviewReport } from '../lib/exportReport';
 import type { Tool } from '../types';
 import { Icon } from './Icon';
 import { rotateView, ViewMenu } from './ViewMenu';
@@ -99,6 +100,13 @@ export function Toolbar({ onOpen, onSave }: Props) {
         </button>
         <button title="Save (Ctrl+S)" disabled={!hasDoc} onClick={() => onSave()}>
           <Icon name="save" />
+        </button>
+        <button
+          title="Export review report (Ctrl+Shift+E): a PDF with each comment and a highlighted close-up, for anyone"
+          disabled={!hasDoc || !s.markups.length || !!s.reportStatus}
+          onClick={exportReviewReport}
+        >
+          <Icon name="report" />
         </button>
         <button title="Undo (Ctrl+Z)" disabled={!s.past.length} onClick={s.undo}>
           <Icon name="undo" />

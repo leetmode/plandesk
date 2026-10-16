@@ -90,6 +90,8 @@ function buildMenu() {
         { label: 'Save', accelerator: 'CmdOrCtrl+S', click: send('save') },
         { label: 'Save As…', accelerator: 'CmdOrCtrl+Shift+S', click: send('saveAs') },
         { type: 'separator' },
+        { label: 'Export Review Report…', accelerator: 'CmdOrCtrl+Shift+E', click: send('exportReport') },
+        { type: 'separator' },
         { label: 'Close Tab', accelerator: 'CmdOrCtrl+W', click: send('closeTab') },
         isMac ? { role: 'close', accelerator: 'Cmd+Shift+W' } : { role: 'quit' },
       ],

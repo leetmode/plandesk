@@ -46,7 +46,8 @@ Installers are built by GitHub Actions whenever a version tag is pushed:
   drawing display, PDF layers panel, zoom to selection (Z), full screen (F11),
   and panel toggles
 - **Learn the keys:** every tool button shows its shortcut; press ? for the full list
-- **Review report:** "Export review report" (above the markups list) makes a PDF
+- **Review report:** File > Export Review Report (Ctrl+Shift+E), the toolbar button
+  next to Save, or "Export review report" above the markups list makes a PDF
   anyone can read: a summary page listing every comment, then one page per comment
   with a zoomed, highlighted close-up, a map of where it is on the sheet, and the
   comment, author, date and status. It follows the list's filter, so you can send
