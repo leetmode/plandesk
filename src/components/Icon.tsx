@@ -18,6 +18,7 @@ const PATHS: Record<string, string> = {
   note: 'M4 4h16v11H11l-5 5v-5H4zM8 8h8M8 11h6',
   keyboard: 'M3 6h18v12H3zM7 10h.01M11 10h.01M15 10h.01M8 14h8',
   crosshair: 'M12 3v18M3 12h18M12 8a4 4 0 100 8 4 4 0 000-8z',
+  report: 'M6 3h9l4 4v6M6 3v18h7M15 3v4h4M9 9h6M9 13h3M17 15a3 3 0 100 6 3 3 0 000-6zM19.2 20.2L21 22',
   length: 'M4 12h16M4 8v8M20 8v8M8 12v2M12 12v3M16 12v2',
   polylength: 'M4 18l6-8 4 4 6-8M4 16v4M20 4v4',
   area: 'M5 5h14v14H5zM5 12h14M12 5v14',

@@ -4,7 +4,8 @@ import type { Markup, Status } from '../types';
 import { STATUSES } from '../types';
 import { TYPE_LABEL } from '../lib/markups';
 import { DEFAULT_SCALE, formatArea, formatLength, measureMarkup } from '../lib/measure';
-import { saveText } from '../lib/platform';
+import { saveText, savePdf, showFile, isDesktop } from '../lib/platform';
+import { buildReport } from '../lib/report';
 import { Icon } from './Icon';
 
 type Col = 'page' | 'type' | 'subject' | 'text' | 'measurement' | 'author' | 'date' | 'status';
@@ -118,6 +119,32 @@ export function MarkupsList() {
     await saveText(toCsv(rows, s.scales), `${base} - markups.csv`, 'CSV', 'csv');
   };
 
+  // a walk-through PDF of the comments currently listed (respects the filter)
+  const [reporting, setReporting] = useState<string | null>(null);
+  const exportReport = async () => {
+    if (!s.baseBytes || !rows.length) return;
+    const base = (s.fileName ?? 'markups').replace(/\.pdf$/i, '');
+    setReporting('Preparing report…');
+    try {
+      const bytes = await buildReport({
+        baseBytes: s.baseBytes,
+        markups: s.markups,
+        include: rows.map((r) => r.m),
+        scales: s.scales,
+        fileName: s.fileName ?? 'Drawing.pdf',
+        onProgress: (done, total) => setReporting(`Building report ${done}/${total}…`),
+      });
+      setReporting(null);
+      const written = await savePdf(bytes, null, `${base} - review comments.pdf`);
+      if (written && isDesktop()) await showFile(written);
+    } catch (e) {
+      console.error(e);
+      window.alert(`Couldn't build the report: ${(e as Error).message}`);
+    } finally {
+      setReporting(null);
+    }
+  };
+
   const pick = (m: Markup) => useDoc.setState({ page: m.page, selection: [m.id], tool: 'select', focusId: m.id });
 
   return (
@@ -143,6 +170,14 @@ export function MarkupsList() {
           </>
         )}
         <div className="tb-spacer" />
+        <button
+          className="text-btn"
+          onClick={exportReport}
+          disabled={!rows.length || !!reporting}
+          title="A PDF that walks through each comment with a zoomed, highlighted view. Easy to send to anyone. Uses the current filter."
+        >
+          <Icon name="report" size={14} /> {reporting ?? 'Export review report'}
+        </button>
         <button className="text-btn" onClick={exportCsv} disabled={!s.markups.length}>
           <Icon name="download" size={14} /> Export CSV
         </button>

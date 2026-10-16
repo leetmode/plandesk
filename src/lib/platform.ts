@@ -12,6 +12,7 @@ interface Bridge {
   savePdf(bytes: Uint8Array, path: string | null, suggestedName: string): Promise<string | null>;
   saveText(text: string, suggestedName: string, filterName: string, ext: string): Promise<string | null>;
   pathForFile(file: File): string;
+  showFile(path: string): Promise<boolean>;
   userName(): Promise<string>;
   setDirty(dirty: boolean, title: string): void;
   onOpenPath(cb: (path: string) => void): void;
@@ -75,6 +76,9 @@ export async function saveText(text: string, suggestedName: string, filterName: 
   download(text, suggestedName, 'text/plain');
   return suggestedName;
 }
+
+/** Opens a file PlanDesk saved in the default app. Desktop only. */
+export const showFile = (path: string) => bridge()?.showFile(path) ?? Promise.resolve(false);
 
 export async function userName(): Promise<string> {
   return (await bridge()?.userName()) ?? 'User';

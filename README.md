@@ -19,7 +19,7 @@ Get the latest installers from the [Releases page](https://github.com/leetmode/p
 Installers are built by GitHub Actions whenever a version tag is pushed:
 `npm version patch && git push --follow-tags`.
 
-## Features (v0.2.2)
+## Features (v0.2.3)
 
 - **Markups:** pen, line, arrow, rectangle, ellipse, polyline, polygon, revision
   cloud (rectangle and polygon), Cloud+ (cloud with a leader to a text box),
@@ -46,6 +46,11 @@ Installers are built by GitHub Actions whenever a version tag is pushed:
   drawing display, PDF layers panel, zoom to selection (Z), full screen (F11),
   and panel toggles
 - **Learn the keys:** every tool button shows its shortcut; press ? for the full list
+- **Review report:** "Export review report" (above the markups list) makes a PDF
+  anyone can read: a summary page listing every comment, then one page per comment
+  with a zoomed, highlighted close-up, a map of where it is on the sheet, and the
+  comment, author, date and status. It follows the list's filter, so you can send
+  only Open items, for example. Opens in your PDF viewer when saved
 - **Tabs:** open several PDFs at once (pick many in Open, or drop several files);
   each gets a tab with its own pages, markups, zoom and undo history. Ctrl+Tab
   switches, Ctrl+W or middle-click closes, and a dot marks unsaved changes
@@ -86,6 +91,7 @@ npm run test:e2e   # drives the real Electron app, screenshots in tests/e2e-out/
 node tests/e2e-view.mjs  # shape text + view options
 node tests/e2e-cloudplus.mjs  # Cloud+, shortcut badges, side-by-side, crosshair, snap to markup
 node tests/e2e-tabs.mjs       # several PDFs in tabs, page panel refresh
+node tests/e2e-report.mjs     # review report export (pages saved as tests/e2e-out/report-p*.png)
 npm run dist:win   # Windows installer -> ../../../plandesk-release/<version>/
 npm run dist:mac   # macOS .dmg (run this on a Mac; CI builds it for releases)
 ```

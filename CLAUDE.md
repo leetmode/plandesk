@@ -13,7 +13,7 @@ PDF.js for rendering, pdf-lib for saving. Windows and macOS. Repo: github.com/le
 2. `npm install` after pulling if package-lock.json changed.
 3. Make the change, then run: `npm run typecheck`, `npm test`, and the e2e scripts that touch the area:
    `npm run build && node tests/e2e.mjs` (markups/measurements), `node tests/e2e-view.mjs` (view options,
-   shape text), `node tests/e2e-cloudplus.mjs` (Cloud+, shortcuts, layouts, notes), `node tests/e2e-tabs.mjs` (tabs). Check the screenshots
+   shape text), `node tests/e2e-cloudplus.mjs` (Cloud+, shortcuts, layouts, notes), `node tests/e2e-tabs.mjs` (tabs), `node tests/e2e-report.mjs` (review report). Check the screenshots
    in tests/e2e-out/ and that `errors` is empty.
 4. Commit and push.
 5. To ship installers: `npm version patch` (or minor) then `git push --follow-tags`. GitHub Actions
@@ -26,6 +26,8 @@ PDF.js for rendering, pdf-lib for saving. Windows and macOS. Repo: github.com/le
 - src/lib/render.ts: on-screen drawing plan. src/lib/pdfio.ts: load/save as PDF annotations, imports
   Revu/Acrobat annotations, replies (/IRT) and review states. Keep render.ts and pdfio.ts in sync so the
   screen matches the saved PDF.
+- src/lib/report.ts: review report PDF (renders the marked-up sheet with pdf.js, crops/highlights per
+  comment, lays out pages with pdf-lib). Text must go through safeText (Helvetica is WinAnsi only).
 - src/tabs.ts: open documents. The active tab's document lives in useDoc; inactive tabs keep a parked
   snapshot of the per-document fields (DOC_KEYS). Add new per-document store fields to DOC_KEYS.
 - src/components/PageView.tsx: drawing/selection interactions per page. Viewer.tsx: scrolling, zoom, layouts.

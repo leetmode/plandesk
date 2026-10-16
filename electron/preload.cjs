@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('plandesk', {
   savePdf: (bytes, path, suggestedName) => ipcRenderer.invoke('save-pdf', bytes, path, suggestedName),
   saveText: (text, suggestedName, filterName, ext) => ipcRenderer.invoke('save-text', text, suggestedName, filterName, ext),
   pathForFile: (file) => webUtils.getPathForFile(file),
+  showFile: (p) => ipcRenderer.invoke('show-file', p),
   userName: () => ipcRenderer.invoke('user-name'),
   setDirty: (dirty, title) => ipcRenderer.send('set-dirty', dirty, title),
   onOpenPath: (cb) => ipcRenderer.on('open-path', (_e, p) => cb(p)),

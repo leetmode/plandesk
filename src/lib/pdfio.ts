@@ -452,7 +452,7 @@ function drawText(lines: string[], x: number, y: number, size: number, color: st
 }
 
 // standard fonts are WinAnsi only; replace anything outside it
-function safeText(font: PDFFont, s: string): string {
+export function safeText(font: PDFFont, s: string): string {
   return [...s].map((ch) => {
     try {
       font.encodeText(ch);

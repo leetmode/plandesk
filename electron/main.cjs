@@ -142,7 +142,15 @@ ipcMain.handle('save-pdf', async (_e, bytes, target, suggestedName) => {
     p = r.filePath;
   }
   await writeAtomic(p, Buffer.from(bytes));
+  written.add(p);
   return p;
+});
+
+// open a file PlanDesk just saved (e.g. a review report) in the system's PDF viewer
+const written = new Set();
+ipcMain.handle('show-file', async (_e, p) => {
+  if (!written.has(p)) return false;
+  return (await shell.openPath(p)) === '';
 });
 
 ipcMain.handle('save-text', async (_e, text, suggestedName, filterName, ext) => {
