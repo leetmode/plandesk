@@ -1,0 +1,93 @@
+{
+  "name": "plandesk",
+  "productName": "PlanDesk",
+  "version": "0.1.0",
+  "description": "PDF markup and takeoff for construction plans",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.cjs",
+  "author": "Alex Younger",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build",
+    "start": "electron .",
+    "app": "npm run build && electron .",
+    "test": "vitest run",
+    "dist:win": "npm run build && electron-builder --win",
+    "dist:mac": "npm run build && electron-builder --mac",
+    "icon": "node scripts/make-icon.mjs build/icon.png",
+    "test:e2e": "vite build && node tests/e2e.mjs",
+    "sample": "node scripts/make-sample.mjs"
+  },
+  "dependencies": {
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.4.299",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "electron": "^44.7.2",
+    "electron-builder": "^26.15.3",
+    "playwright-core": "^1.64.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5"
+  },
+  "build": {
+    "appId": "com.leetmode.plandesk",
+    "productName": "PlanDesk",
+    "directories": {
+      "output": "../../../plandesk-release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**",
+      "electron/**",
+      "package.json"
+    ],
+    "fileAssociations": [
+      {
+        "ext": "pdf",
+        "name": "PDF Document",
+        "role": "Editor",
+        "description": "PDF Document"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "PlanDesk"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "category": "public.app-category.productivity"
+    }
+  }
+}
