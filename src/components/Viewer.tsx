@@ -26,12 +26,15 @@ export function Viewer({ pdf, oc }: Props) {
   const svgs = useRef(new Map<number, SVGSVGElement>());
   const [sizes, setSizes] = useState<Size[] | null>(null);
   const [cursor, setCursor] = useState<Pt | null>(null);
+  const [hair, setHair] = useState<Pt | null>(null); // crosshair position inside the viewer
   const anchor = useRef<{ index: number; pt: Pt; client: Pt } | null>(null);
   const scrolledPage = useRef(-1); // page the continuous view last scrolled to / from
   const pan = useRef<{ client: Pt; scroll: Pt } | null>(null);
   const [, force] = useState(0);
 
-  const continuous = view.layout === 'continuous';
+  const continuous = view.layout === 'continuous' || view.layout === 'continuousSideBySide';
+  // side-by-side shows pages in pairs: odd pages on the left, even on the right
+  const paired = view.layout === 'sideBySide' || view.layout === 'continuousSideBySide';
   const rotated = view.rotation % 180 !== 0;
   const disp = useCallback((s: Size): Size => (rotated ? { w: s.h, h: s.w } : s), [rotated]);
 
@@ -106,8 +109,11 @@ export function Viewer({ pdf, oc }: Props) {
   useEffect(() => {
     const el = scrollRef.current;
     if (!zoomCmd || !el || !sizes) return;
-    const sz = disp(sizes[page]);
-    const fw = (el.clientWidth - PAD * 2) / sz.w;
+    const first = paired ? page - (page % 2) : page;
+    const row = [first, ...(paired && first + 1 < sizes.length ? [first + 1] : [])].map((i) => disp(sizes[i]));
+    const sz = { w: row.reduce((a, s) => a + s.w, 0), h: Math.max(...row.map((s) => s.h)) };
+    const gaps = (row.length - 1) * PAD; // screen pixels between paired pages
+    const fw = (el.clientWidth - PAD * 2 - gaps) / sz.w;
     const fp = Math.min(fw, (el.clientHeight - PAD * 2) / sz.h);
     const st = useDoc.getState();
     useDoc.setState({ zoomCmd: null });
@@ -140,7 +146,7 @@ export function Viewer({ pdf, oc }: Props) {
         break;
       }
     }
-  }, [zoomCmd, sizes, page, disp, rotated, setZoom, scrollToPage]);
+  }, [zoomCmd, sizes, page, disp, rotated, setZoom, scrollToPage, paired]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -249,12 +255,28 @@ export function Viewer({ pdf, oc }: Props) {
   };
 
   // ---------------------------------------------------------------- render
-  const indices = !sizes ? [] : continuous ? sizes.map((_, i) => i) : [page];
+  const all = sizes ? sizes.map((_, i) => i) : [];
+  const indices = !sizes ? [] : continuous ? all : paired ? all.filter((i) => i - (i % 2) === page - (page % 2)) : [page];
+  const rows: number[][] = [];
+  for (const i of indices) {
+    if (paired && rows.length && i % 2 === 1 && rows[rows.length - 1][0] === i - 1) rows[rows.length - 1].push(i);
+    else rows.push([i]);
+  }
   const filter = view.display === 'gray' ? 'grayscale(1)' : view.display === 'invert' ? 'invert(1) hue-rotate(180deg)' : undefined;
   const panning = tool === 'pan' || keys.space;
 
   return (
-    <div className="viewer-shell">
+    <div
+      className="viewer-shell"
+      onPointerMove={(e) => {
+        if (!view.crosshair) return;
+        const el = scrollRef.current!;
+        const r = el.getBoundingClientRect();
+        const x = e.clientX - r.left, y = e.clientY - r.top;
+        setHair(x >= 0 && y >= 0 && x < el.clientWidth && y < el.clientHeight ? { x, y } : null);
+      }}
+      onPointerLeave={() => setHair(null)}
+    >
       <div
         className={`viewer ${panning ? 'panning' : ''} ${view.display === 'invert' ? 'dark-paper' : ''}`}
         ref={scrollRef}
@@ -264,7 +286,9 @@ export function Viewer({ pdf, oc }: Props) {
         onPointerUp={onPointerUp}
       >
         <div className="pages" style={{ padding: PAD, gap: PAD }}>
-          {indices.map((i) => (
+          {rows.map((row) => (
+            <div className="page-row" key={row[0]} style={{ gap: PAD }}>
+            {row.map((i) => (
             <PageView
               key={i}
               pdf={pdf}
@@ -280,9 +304,17 @@ export function Viewer({ pdf, oc }: Props) {
               registerSvg={registerSvg}
               onCursor={setCursor}
             />
+            ))}
+            </div>
           ))}
         </div>
       </div>
+      {view.crosshair && hair && (
+        <>
+          <div className="crosshair-h" style={{ top: hair.y }} />
+          <div className="crosshair-v" style={{ left: hair.x }} />
+        </>
+      )}
       {cursor && (
         <div className="cursor-readout">
           {cursor.x.toFixed(0)}, {cursor.y.toFixed(0)} pt

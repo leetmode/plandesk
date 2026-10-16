@@ -145,6 +145,32 @@ describe('text in shapes', () => {
   });
 });
 
+describe('cloud+', () => {
+  it('saves the cloud, leader and text box, and reads them back', async () => {
+    const base = await blankPdf([90]);
+    const m = makeMarkup('cloudplus', 0, [{ x: 100, y: 300 }, { x: 300, y: 450 }, { x: 400, y: 150 }, { x: 600, y: 190 }], DEFAULT_STYLES.cloudplus, 'T');
+    m.text = 'RELOCATE DIFFUSER PER RCP';
+    const saved = await savePdf(base, [m], {});
+    const doc = await PDFDocument.load(saved);
+    const annot = doc.context.lookup(doc.getPages()[0].node.Annots()!.get(0)) as never as { get(n: PDFName): { decodeText(): string } };
+    expect(annot.get(PDFName.of('Contents')).decodeText()).toBe(m.text);
+    const back = (await loadPdf(saved)).markups[0];
+    expect(back.type).toBe('cloudplus');
+    expect(back.text).toBe(m.text);
+    expect(back.points).toEqual(m.points);
+  });
+
+  it('runs the leader from the cloud edge to the near side of the box', async () => {
+    const { cloudPlusLeader } = await import('../src/lib/markups');
+    const m = makeMarkup('cloudplus', 0, [{ x: 0, y: 0 }, { x: 100, y: 100 }, { x: 200, y: 30 }, { x: 300, y: 70 }], DEFAULT_STYLES.cloudplus, 'T');
+    expect(cloudPlusLeader(m)).toEqual([{ x: 100, y: 50 }, { x: 200, y: 50 }]);
+    // box overlapping the cloud: no leader
+    m.points[2] = { x: 20, y: 20 };
+    m.points[3] = { x: 80, y: 80 };
+    expect(cloudPlusLeader(m)).toBeNull();
+  });
+});
+
 describe('measurement', () => {
   it('formats and parses construction lengths', () => {
     expect(formatLength(150.5, 'ft-in')).toBe("12'-6 1/2\"");

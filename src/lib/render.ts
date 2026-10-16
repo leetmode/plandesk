@@ -13,7 +13,7 @@ import {
   wrapText,
   type Box,
 } from './geometry';
-import { calloutLeader, labelAnchor, LINE_HEIGHT, shapeTextBox, TEXT_SHAPES, textBox } from './markups';
+import { calloutLeader, cloudPlusLeader, cloudRect, labelAnchor, LINE_HEIGHT, shapeTextBox, TEXT_SHAPES, textBox } from './markups';
 import { measureMarkup } from './measure';
 
 export type Part =
@@ -86,6 +86,16 @@ export function planMarkup(m: Markup, scale: PageScale, measure: (s: string, siz
         out.push({ kind: 'text', x: pt.x + 7, y: pt.y - 6 - m.fontSize * 0.6, lines: [String(i + 1)], size: m.fontSize * 0.8 });
       });
       break;
+    case 'cloudplus': {
+      shape(segsToSvg(cloudSegs(rectCorners(cloudRect(m)), Math.max(8, m.width * 6))));
+      if (p.length < 4) break;
+      const leader = cloudPlusLeader(m);
+      if (leader) line(leader);
+      const { box, lines } = textLayout(m, measure);
+      out.push({ kind: 'path', d: segsToSvg(polySegs(rectCorners(box), true)), stroke: m.width > 0, fill: m.fill });
+      out.push({ kind: 'text', x: box.x + 4, y: box.y + 4, lines, size: m.fontSize });
+      break;
+    }
     case 'text':
     case 'callout': {
       if (m.type === 'callout' && p.length >= 3) {
@@ -113,6 +123,11 @@ export function planMarkup(m: Markup, scale: PageScale, measure: (s: string, siz
 }
 
 // Handles the user can drag to reshape a markup (none for freehand pen strokes).
+// Cloud+ adds a fifth handle in the middle of its text box that moves just the box.
 export function handlesFor(m: Markup): Pt[] {
+  if (m.type === 'cloudplus' && m.points.length >= 4) {
+    const b = boxFrom(m.points[2], m.points[3]);
+    return [...m.points, { x: b.x + b.w / 2, y: b.y + b.h / 2 }];
+  }
   return m.type === 'pen' ? [] : m.points;
 }

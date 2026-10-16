@@ -33,7 +33,7 @@ import {
   wrapText,
   type Seg,
 } from './geometry';
-import { calloutLeader, DEFAULT_STYLES, labelAnchor, LINE_HEIGHT, newId, shapeTextBox, TEXT_SHAPES, textBox, TYPE_LABEL } from './markups';
+import { calloutLeader, cloudPlusLeader, cloudRect, DEFAULT_STYLES, labelAnchor, LINE_HEIGHT, newId, shapeTextBox, TEXT_SHAPES, textBox, TYPE_LABEL } from './markups';
 import { DEFAULT_SCALE, isMetric, measureMarkup } from './measure';
 
 const KEY = PDFName.of('PlanDesk');
@@ -482,6 +482,19 @@ function draw(m: Markup, scale: PageScale, font: PDFFont): Drawing {
         d.extent.push({ x: pt.x - r - 1, y: pt.y - r - m.fontSize }, { x: pt.x + r + font.widthOfTextAtSize(String(i + 1), m.fontSize) + 4, y: pt.y + r + 1 });
       });
       break;
+    case 'cloudplus': {
+      const arc = Math.max(8, m.width * 6);
+      const c = cloudRect(m);
+      strokeFill(cloudSegs(rectCorners(c), arc), m, d);
+      d.extent.push(...rectCorners(pad(c, arc / 2 + m.width)));
+      if (p.length < 4) break;
+      const leader = cloudPlusLeader(m);
+      if (leader) strokeFill(polySegs(leader, false), m, d, { fill: false });
+      const b = textBox(m);
+      strokeFill(polySegs(rectCorners(b), true), m, d);
+      drawText(textLines(m, font), b.x + 4, b.y + 4, m.fontSize, m.color, font, d);
+      break;
+    }
     case 'text':
     case 'callout': {
       const b = textBox(m);
@@ -526,6 +539,7 @@ const SUBTYPE: Record<MarkupType, string> = {
   highlight: 'Highlight',
   text: 'FreeText',
   callout: 'FreeText',
+  cloudplus: 'Square',
   count: 'Stamp',
 };
 
@@ -586,7 +600,7 @@ export async function savePdf(baseBytes: Uint8Array, markups: Markup[], scales: 
       T: PDFHexString.fromText(m.author),
       Subj: PDFHexString.fromText(m.subject),
       // other viewers show Contents as the markup's text, so shapes with text use it too
-      Contents: PDFHexString.fromText(m.type === 'text' || m.type === 'callout' || (TEXT_SHAPES.has(m.type) && m.text) ? m.text : m.comment),
+      Contents: PDFHexString.fromText(m.type === 'text' || m.type === 'callout' || ((TEXT_SHAPES.has(m.type) || m.type === 'cloudplus') && m.text) ? m.text : m.comment),
       M: PDFString.of(toPdfDate(m.modified)),
       CreationDate: PDFString.of(toPdfDate(m.created)),
       C: hexToRgb(m.color).map(f3),
@@ -635,7 +649,7 @@ export async function savePdf(baseBytes: Uint8Array, markups: Markup[], scales: 
         entries.Name = 'PlanDeskCount';
         break;
     }
-    if (m.type === 'cloud' || m.type === 'polycloud') entries.BE = { S: 'C', I: 1 };
+    if (m.type === 'cloud' || m.type === 'polycloud' || m.type === 'cloudplus') entries.BE = { S: 'C', I: 1 };
     if (m.type === 'length') entries.IT = 'LineDimension';
     if (m.type === 'polylength') entries.IT = 'PolyLineDimension';
     if (m.type === 'area') entries.IT = 'PolygonDimension';

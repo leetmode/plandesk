@@ -12,6 +12,7 @@ export const TOOL_KEYS: Record<string, Tool> = {
   r: 'rect',
   e: 'ellipse',
   c: 'cloud',
+  b: 'cloudplus',
   t: 'text',
   q: 'callout',
   i: 'highlight',
@@ -19,11 +20,35 @@ export const TOOL_KEYS: Record<string, Tool> = {
   n: 'polylength',
   g: 'area',
   k: 'count',
+  s: 'calibrate',
+  'shift+l': 'polyline',
+  'shift+r': 'polygon',
+  'shift+c': 'polycloud',
 };
 
-const keyFor = (t: Tool) => Object.entries(TOOL_KEYS).find(([, v]) => v === t)?.[0]?.toUpperCase();
+// "shift+c" -> "⇧C"
+export const keyLabel = (k: string) => k.replace('shift+', '⇧').toUpperCase();
+export const keyFor = (t: Tool) => {
+  const k = Object.entries(TOOL_KEYS).find(([, v]) => v === t)?.[0];
+  return k ? keyLabel(k) : undefined;
+};
 
-const GROUPS: { label: string; tools: { id: Tool; title: string }[] }[] = [
+// tiny drawn shift arrow; the ⇧ glyph is unreadable at badge size
+function KeyBadge({ k }: { k: string }) {
+  const shift = k.startsWith('⇧');
+  return (
+    <span className="kbd">
+      {shift && (
+        <svg width="6" height="7" viewBox="0 0 6 7" aria-label="Shift">
+          <path d="M3 0L6 3.4H4.2V7H1.8V3.4H0z" fill="currentColor" />
+        </svg>
+      )}
+      {shift ? k.slice(1) : k}
+    </span>
+  );
+}
+
+export const GROUPS: { label: string; tools: { id: Tool; title: string }[] }[] = [
   { label: 'Navigate', tools: [{ id: 'select', title: 'Select' }, { id: 'pan', title: 'Pan' }] },
   {
     label: 'Markup',
@@ -36,6 +61,7 @@ const GROUPS: { label: string; tools: { id: Tool; title: string }[] }[] = [
       { id: 'polyline', title: 'Polyline (click points, double-click to finish)' },
       { id: 'polygon', title: 'Polygon (click points, double-click to finish)' },
       { id: 'cloud', title: 'Cloud' },
+      { id: 'cloudplus', title: 'Cloud+ (drag the cloud, then type; drag the middle handle to move the text box)' },
       { id: 'polycloud', title: 'Polygon Cloud (click points, double-click to finish)' },
       { id: 'highlight', title: 'Highlight' },
       { id: 'text', title: 'Text Box' },
@@ -92,6 +118,7 @@ export function Toolbar({ onOpen, onSave }: Props) {
                 onClick={() => useDoc.setState({ tool: t.id, selection: t.id === 'select' ? s.selection : [] })}
               >
                 <Icon name={t.id} />
+                {k && <KeyBadge k={k} />}
               </button>
             );
           })}
@@ -131,6 +158,9 @@ export function Toolbar({ onOpen, onSave }: Props) {
         </button>
       </div>
       <div className="tb-group">
+        <button title="Keyboard shortcuts (?)" onClick={() => useDoc.setState({ showShortcuts: true })}>
+          <Icon name="keyboard" />
+        </button>
         <button className={s.showThumbs ? 'active' : ''} title="Pages panel" onClick={() => useDoc.setState({ showThumbs: !s.showThumbs })}>
           <Icon name="pages" />
         </button>

@@ -14,6 +14,7 @@ export const TYPE_LABEL: Record<MarkupType, string> = {
   highlight: 'Highlight',
   text: 'Text Box',
   callout: 'Callout',
+  cloudplus: 'Cloud+',
   length: 'Length',
   polylength: 'Polylength',
   area: 'Area',
@@ -36,6 +37,7 @@ export const DEFAULT_STYLES: Record<MarkupType, StyleDefaults> = {
   highlight: { color: '#ffd400', fill: '#ffd400', opacity: 1, fillOpacity: 0.4, width: 0, fontSize: 12, subject: 'Highlight' },
   text: { color: RED, fill: null, opacity: 1, fillOpacity: 1, width: 1, fontSize: 12, subject: 'Text Box' },
   callout: { color: RED, fill: '#ffffff', opacity: 1, fillOpacity: 1, width: 1, fontSize: 12, subject: 'Callout' },
+  cloudplus: { color: RED, fill: null, opacity: 1, fillOpacity: 0.3, width: 2, fontSize: 12, subject: 'Cloud+' },
   length: { color: BLUE, fill: null, opacity: 1, fillOpacity: 0.3, width: 1.5, fontSize: 10, subject: 'Length Measurement' },
   polylength: { color: BLUE, fill: null, opacity: 1, fillOpacity: 0.3, width: 1.5, fontSize: 10, subject: 'Polylength Measurement' },
   area: { color: BLUE, fill: BLUE, opacity: 1, fillOpacity: 0.2, width: 1.5, fontSize: 10, subject: 'Area Measurement' },
@@ -69,7 +71,47 @@ export function makeMarkup(type: MarkupType, page: number, points: Pt[], style: 
 }
 
 export function textBox(m: Markup): Box {
+  if (m.type === 'cloudplus') return boxFrom(m.points[2] ?? m.points[0], m.points[3] ?? m.points[1] ?? m.points[0]);
   return m.type === 'callout' ? boxFrom(m.points[1], m.points[2]) : boxFrom(m.points[0], m.points[1]);
+}
+
+// Markups whose text sits in a top-left aligned box that grows to fit.
+export const BOX_TEXT = new Set<MarkupType>(['text', 'callout', 'cloudplus']);
+export const hasText = (t: MarkupType) => BOX_TEXT.has(t) || TEXT_SHAPES.has(t);
+
+// Cloud+ is a revision cloud with a leader running to a separate text box.
+export const cloudRect = (m: Markup): Box => boxFrom(m.points[0], m.points[1] ?? m.points[0]);
+
+// Default spot for a new Cloud+ box: up and to the right of the cloud, kept on the page.
+export function cloudPlusBox(a: Pt, b: Pt, fontSize: number, pageW: number): [Pt, Pt] {
+  const c = boxFrom(a, b);
+  const w = Math.max(160, fontSize * 20);
+  const h = fontSize * 2.5;
+  let x = c.x + c.w + 40;
+  if (x + w > pageW) x = Math.max(0, c.x - 40 - w);
+  const y = Math.max(0, c.y - h - 30);
+  return [{ x, y }, { x: x + w, y: y + h }];
+}
+
+// Leader from the cloud's edge to the nearest side of the text box (null when they overlap).
+export function cloudPlusLeader(m: Markup): [Pt, Pt] | null {
+  if (m.points.length < 4) return null;
+  const c = cloudRect(m);
+  const b = textBox(m);
+  const cc = { x: c.x + c.w / 2, y: c.y + c.h / 2 };
+  const sides = [
+    { x: b.x, y: b.y + b.h / 2 },
+    { x: b.x + b.w, y: b.y + b.h / 2 },
+    { x: b.x + b.w / 2, y: b.y },
+    { x: b.x + b.w / 2, y: b.y + b.h },
+  ];
+  const end = sides.reduce((best, s) => (Math.hypot(s.x - cc.x, s.y - cc.y) < Math.hypot(best.x - cc.x, best.y - cc.y) ? s : best));
+  const inside = (p: Pt) => p.x > c.x && p.x < c.x + c.w && p.y > c.y && p.y < c.y + c.h;
+  if (inside(end)) return null;
+  // where the line from the cloud center to the box crosses the cloud's rectangle
+  const dx = end.x - cc.x, dy = end.y - cc.y;
+  const t = Math.min(dx ? c.w / 2 / Math.abs(dx) : Infinity, dy ? c.h / 2 / Math.abs(dy) : Infinity);
+  return [{ x: cc.x + dx * t, y: cc.y + dy * t }, end];
 }
 
 // Leader for a callout runs from the tip to the nearest side midpoint of the box.

@@ -1,7 +1,7 @@
 import { savePrefs, useDoc } from '../store';
 import type { Markup, MarkupType, StyleDefaults } from '../types';
 import { STATUSES } from '../types';
-import { isMarkupTool, TEXT_SHAPES, TYPE_LABEL } from '../lib/markups';
+import { hasText, isMarkupTool, TEXT_SHAPES, TYPE_LABEL } from '../lib/markups';
 import { DEFAULT_SCALE, measureMarkup } from '../lib/measure';
 
 const SWATCHES = ['#e02020', '#ff7a00', '#ffd400', '#0a9a3c', '#1f5fd6', '#7b2fd6', '#e0208c', '#000000', '#808080', '#ffffff'];
@@ -22,7 +22,7 @@ function ColorRow({ value, onChange, allowNone }: { value: string | null; onChan
 
 function StyleFields({ type, v, set }: { type: MarkupType; v: StyleDefaults; set(p: Partial<StyleDefaults>): void }) {
   const hasFill = !['pen', 'line', 'arrow', 'polyline', 'polylength', 'length', 'count'].includes(type);
-  const hasText = ['text', 'callout', 'length', 'polylength', 'area', 'count', 'rect', 'ellipse', 'cloud', 'polycloud', 'polygon'].includes(type);
+  const hasText = ['text', 'callout', 'cloudplus', 'length', 'polylength', 'area', 'count', 'rect', 'ellipse', 'cloud', 'polycloud', 'polygon'].includes(type);
   const hasStroke = type !== 'highlight';
   return (
     <>
@@ -86,7 +86,7 @@ export function Properties() {
             <option key={st}>{st}</option>
           ))}
         </select>
-        {selected.length === 1 && (TEXT_SHAPES.has(first.type) || first.type === 'text' || first.type === 'callout') && (
+        {selected.length === 1 && hasText(first.type) && (
           <>
             <label>Text {TEXT_SHAPES.has(first.type) && <span className="hint">(shown inside the shape; or double-click it)</span>}</label>
             <textarea rows={3} value={first.text} onChange={(e) => update({ text: e.target.value })} />

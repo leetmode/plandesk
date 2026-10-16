@@ -4,7 +4,7 @@ import type { Markup } from './types';
 import { openDocument, type PDFDocumentProxy } from './lib/pdfjs';
 import { loadPdf, savePdf } from './lib/pdfio';
 import * as platform from './lib/platform';
-import { newId, TEXT_SHAPES, translate } from './lib/markups';
+import { hasText, newId, translate } from './lib/markups';
 import { DEFAULT_SCALE } from './lib/measure';
 import { Toolbar, TOOL_KEYS } from './components/Toolbar';
 import { Viewer } from './components/Viewer';
@@ -14,6 +14,7 @@ import { rotateView, toggleFullscreen } from './components/ViewMenu';
 import { Properties } from './components/Properties';
 import { MarkupsList } from './components/MarkupsList';
 import { ScaleDialog } from './components/ScaleDialog';
+import { ShortcutsDialog } from './components/ShortcutsDialog';
 import { Icon } from './components/Icon';
 
 let clipboard: Markup[] = [];
@@ -161,7 +162,7 @@ export default function App() {
         useDoc.setState({ zoomCmd: { kind: 'selection', t: Date.now() } });
       } else if (e.key === 'Enter' && st.selection.length === 1) {
         const m = st.markups.find((x) => x.id === st.selection[0]);
-        if (m && (TEXT_SHAPES.has(m.type) || m.type === 'text' || m.type === 'callout')) {
+        if (m && hasText(m.type)) {
           e.preventDefault();
           useDoc.setState({ editingText: m.id });
         }
@@ -189,8 +190,12 @@ export default function App() {
         useDoc.setState({ page: Math.max(0, st.page - 1), selection: [] });
       } else if (e.key === 'Escape') {
         useDoc.setState({ selection: [], tool: st.tool === 'count' ? 'count' : 'select' });
-      } else if (!mod && !e.altKey && TOOL_KEYS[k]) {
-        useDoc.setState({ tool: TOOL_KEYS[k], selection: [] });
+      } else if (!mod && e.key === '?') {
+        useDoc.setState({ showShortcuts: !st.showShortcuts });
+      } else if (!mod && !e.altKey && k === 'x') {
+        st.setView({ crosshair: !st.view.crosshair });
+      } else if (!mod && !e.altKey && TOOL_KEYS[(e.shiftKey ? 'shift+' : '') + k]) {
+        useDoc.setState({ tool: TOOL_KEYS[(e.shiftKey ? 'shift+' : '') + k], selection: [] });
       }
     };
     window.addEventListener('keydown', onKey);
@@ -276,6 +281,7 @@ export default function App() {
         )}
       </footer>
       {s.scaleDialog.open && <ScaleDialog />}
+      {s.showShortcuts && <ShortcutsDialog />}
       {dragOver && <div className="drop-hint">Drop PDF to open</div>}
     </div>
   );

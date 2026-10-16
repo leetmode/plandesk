@@ -5,8 +5,12 @@ import { useDoc } from '../store';
 import type { Markup, MarkupType, Pt } from '../types';
 import { bounds, dist, distToSegment, pointInPolygon, rectCorners, boxFrom, simplify, snap45 } from '../lib/geometry';
 import {
+  BOX_TEXT,
   BOX_TYPES,
   CLICK_TOOLS,
+  cloudPlusBox,
+  cloudRect,
+  hasText,
   CLOSED_TYPES,
   isMarkupTool,
   LINE_HEIGHT,
@@ -171,7 +175,25 @@ function PageViewImpl(props: Props) {
   }, [pdf, index, size, zoom, visible, oc, layersVersion]);
 
   // ---------------------------------------------------------------- helpers
+  // snap to a nearby markup point first (when on), then to the grid
   const snapPt = (p: Pt): Pt => {
+    if (view.snapMarkup) {
+      const tol = 10 / zoom;
+      let best: Pt | null = null;
+      let bestD = tol;
+      for (const m of useDoc.getState().markups) {
+        if (m.page !== index) continue;
+        const pts = BOX_TYPES.has(m.type) || m.type === 'cloudplus' ? [...rectCorners(boxFrom(m.points[0], m.points[1] ?? m.points[0])), ...m.points.slice(2)] : m.points;
+        for (const q of pts) {
+          const d = dist(q, p);
+          if (d < bestD) {
+            bestD = d;
+            best = q;
+          }
+        }
+      }
+      if (best) return best;
+    }
     if (!view.grid || !view.snap) return p;
     return { x: Math.round(p.x / gridPts) * gridPts, y: Math.round(p.y / gridPts) * gridPts };
   };
@@ -231,6 +253,11 @@ function PageViewImpl(props: Props) {
     const list = useDoc.getState().markups.filter((m) => m.page === index);
     for (let i = list.length - 1; i >= 0; i--) {
       const m = list[i];
+      if (m.type === 'cloudplus') {
+        const near = (bx: { x: number; y: number; w: number; h: number }) => pt.x >= bx.x - tol && pt.x <= bx.x + bx.w + tol && pt.y >= bx.y - tol && pt.y <= bx.y + bx.h + tol;
+        if (near(cloudRect(m)) || (m.points.length >= 4 && near(textBox(m)))) return m;
+        continue;
+      }
       if (BOX_TYPES.has(m.type) || m.type === 'callout') {
         const bx = m.type === 'callout' ? textBox(m) : bounds(m.points);
         if (pt.x >= bx.x - tol && pt.x <= bx.x + bx.w + tol && pt.y >= bx.y - tol && pt.y <= bx.y + bx.h + tol) return m;
@@ -341,6 +368,7 @@ function PageViewImpl(props: Props) {
       case 'draw': {
         const end = LINE_LIKE.has(d.type) && e.shiftKey ? snap45(d.start, pt) : pt;
         if (d.type === 'callout') setDraft(draftFor('callout', [d.start, end, { x: end.x + 160, y: end.y + 40 }]));
+        else if (d.type === 'cloudplus') setDraft(draftFor('cloudplus', [d.start, end, ...cloudPlusBox(d.start, end, style('cloudplus').fontSize, size.w)]));
         else setDraft(draftFor(d.type, [d.start, end]));
         break;
       }
@@ -353,6 +381,15 @@ function PageViewImpl(props: Props) {
       }
       case 'handle': {
         const pts = [...d.orig.points];
+        if (d.orig.type === 'cloudplus' && d.index === 4) {
+          // the middle handle drags the text box on its own; the leader follows
+          const c = { x: (pts[2].x + pts[3].x) / 2, y: (pts[2].y + pts[3].y) / 2 };
+          const dx = raw.x - c.x, dy = raw.y - c.y;
+          pts[2] = { x: pts[2].x + dx, y: pts[2].y + dy };
+          pts[3] = { x: pts[3].x + dx, y: pts[3].y + dy };
+          setLiveEdit([{ ...d.orig, points: pts }]);
+          break;
+        }
         const prev = pts[d.index - 1] ?? pts[d.index + 1];
         pts[d.index] = e.shiftKey && prev ? snap45(prev, pt) : pt;
         setLiveEdit([{ ...d.orig, points: pts }]);
@@ -394,10 +431,11 @@ function PageViewImpl(props: Props) {
         } else if (d.type === 'callout') {
           points = [d.start, end, { x: end.x + 160, y: end.y + 40 }];
         } else if (tiny) return;
+        else if (d.type === 'cloudplus') points = [d.start, end, ...cloudPlusBox(d.start, end, st.styles.cloudplus.fontSize, size.w)];
         const m = makeMarkup(d.type, index, points, style(d.type), st.author);
         st.add(m);
         useDoc.setState({ selection: [m.id] });
-        if (d.type === 'text' || d.type === 'callout') useDoc.setState({ editingText: m.id, tool: st.toolLocked ? tool : 'select' });
+        if (BOX_TEXT.has(d.type)) useDoc.setState({ editingText: m.id, tool: st.toolLocked ? tool : 'select' });
         else finishTool();
         break;
       }
@@ -436,7 +474,7 @@ function PageViewImpl(props: Props) {
     }
     if (tool !== 'select') return;
     const hit = hitTest(toPage(e));
-    if (hit && (hit.type === 'text' || hit.type === 'callout' || TEXT_SHAPES.has(hit.type))) useDoc.setState({ editingText: hit.id, selection: [hit.id] });
+    if (hit && hasText(hit.type)) useDoc.setState({ editingText: hit.id, selection: [hit.id] });
   };
 
   // ---------------------------------------------------------------- render
@@ -444,7 +482,7 @@ function PageViewImpl(props: Props) {
   const pageMarkups = view.showMarkups ? allMarkups.filter((m) => m.page === index).map((m) => live.get(m.id) ?? m) : [];
   const selected = active ? pageMarkups.filter((m) => selection.includes(m.id)) : [];
   const editing = editingText ? pageMarkups.find((m) => m.id === editingText) : null;
-  const cursor = keys.space || tool === 'pan' ? 'grab' : tool === 'select' ? 'default' : tool === 'text' ? 'text' : 'crosshair';
+  const cursor = keys.space || tool === 'pan' ? 'grab' : view.crosshair ? 'none' : tool === 'select' ? 'default' : tool === 'text' ? 'text' : 'crosshair';
 
   return (
     <div className="page-slot" ref={slotRef} style={{ width: rotated ? H : W, height: rotated ? W : H }}>
@@ -535,8 +573,9 @@ function TextEditor({ m, zoom }: { m: Markup; zoom: number }) {
   const done = () => {
     const st = useDoc.getState();
     useDoc.setState({ editingText: null });
-    const isTextBox = m.type === 'text' || m.type === 'callout';
-    if (isTextBox && !value.trim() && !m.text) {
+    const isTextBox = BOX_TEXT.has(m.type);
+    // an empty Cloud+ is still a cloud; empty text boxes and callouts are dropped
+    if ((m.type === 'text' || m.type === 'callout') && !value.trim() && !m.text) {
       st.remove([m.id]);
       return;
     }
@@ -549,8 +588,8 @@ function TextEditor({ m, zoom }: { m: Markup; zoom: number }) {
     const { lines } = textLayout({ ...m, text: value }, measureUi);
     const needH = lines.length * m.fontSize * LINE_HEIGHT + 8;
     const pts = [...m.points];
-    const i = m.type === 'callout' ? 2 : 1;
-    const j = m.type === 'callout' ? 1 : 0;
+    const i = m.type === 'cloudplus' ? 3 : m.type === 'callout' ? 2 : 1;
+    const j = i - 1;
     if (Math.abs(pts[i].y - pts[j].y) < needH) pts[i] = { ...pts[i], y: Math.min(pts[i].y, pts[j].y) + needH };
     st.update([m.id], { text: value, points: pts });
   };

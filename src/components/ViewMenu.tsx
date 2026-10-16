@@ -57,6 +57,8 @@ export function ViewMenu() {
           <div className="menu-head">Page layout</div>
           <Item label="Single page" checked={v.layout === 'single'} onClick={() => s.setView({ layout: 'single' })} />
           <Item label="Continuous" checked={v.layout === 'continuous'} onClick={() => s.setView({ layout: 'continuous' })} />
+          <Item label="Side-by-side" checked={v.layout === 'sideBySide'} onClick={() => s.setView({ layout: 'sideBySide' })} />
+          <Item label="Continuous side-by-side" checked={v.layout === 'continuousSideBySide'} onClick={() => s.setView({ layout: 'continuousSideBySide' })} />
           <div className="menu-sep" />
           <div className="menu-head">Rotate view</div>
           <Item label="Rotate clockwise" shortcut="Ctrl+Shift+=" onClick={() => rotateView(1)} disabled={!hasDoc} />
@@ -72,6 +74,8 @@ export function ViewMenu() {
           <Item label="Markups" checked={v.showMarkups} shortcut="Ctrl+M" onClick={() => s.setView({ showMarkups: !v.showMarkups })} />
           <Item label="Grid" checked={v.grid} shortcut="Ctrl+G" onClick={() => s.setView({ grid: !v.grid })} />
           <Item label="Snap to grid" checked={v.snap} onClick={() => s.setView({ snap: !v.snap, grid: v.grid || !v.snap })} />
+          <Item label="Snap to markup" checked={v.snapMarkup} onClick={() => s.setView({ snapMarkup: !v.snapMarkup })} />
+          <Item label="Full-screen crosshair" checked={v.crosshair} shortcut="X" onClick={() => s.setView({ crosshair: !v.crosshair })} />
           <div className="menu-grid-size">
             Grid spacing
             <select value={v.gridSpacing} onChange={(e) => s.setView({ gridSpacing: +e.target.value })} onClick={(e) => e.stopPropagation()}>
@@ -93,6 +97,7 @@ export function ViewMenu() {
           <Item label="Markups list" checked={s.showList} onClick={() => useDoc.setState({ showList: !s.showList })} />
           <Item label="Properties" checked={s.showProps} onClick={() => useDoc.setState({ showProps: !s.showProps })} />
           <Item label="Full screen" shortcut="F11" onClick={toggleFullscreen} />
+          <Item label="Keyboard shortcuts" shortcut="?" onClick={() => useDoc.setState({ showShortcuts: true })} />
         </div>
       )}
     </div>

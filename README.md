@@ -3,10 +3,11 @@
 PDF markup and takeoff for construction drawings. Windows and macOS desktop app
 (Electron + React + PDF.js), written from scratch.
 
-## Features (v0.2)
+## Features (v0.2.1)
 
 - **Markups:** pen, line, arrow, rectangle, ellipse, polyline, polygon, revision
-  cloud (rectangle and polygon), highlight, text box, callout
+  cloud (rectangle and polygon), Cloud+ (cloud with a leader to a text box),
+  highlight, text box, callout
 - **Measurements:** calibrate scale (draw along a known dimension) or pick a preset
   (architectural, engineering, metric); length, polylength, area, count
 - **Markups list:** sortable and filterable, with status (Open / Accepted / Rejected /
@@ -20,10 +21,12 @@ PDF markup and takeoff for construction drawings. Windows and macOS desktop app
   measurements) open as editable markups.
 - **Text in shapes:** double-click a cloud, rectangle, ellipse or polygon (or
   select it and press Enter) to type centered text inside it
-- **View menu:** single page or continuous scrolling, rotate view, show/hide
+- **View menu:** single page, continuous, side-by-side and continuous
+  side-by-side layouts, full-screen crosshair (X), snap to markup, rotate view, show/hide
   markups (Ctrl+M), grid (Ctrl+G) with snap to grid, grayscale or inverted
   drawing display, PDF layers panel, zoom to selection (Z), full screen (F11),
   and panel toggles
+- **Learn the keys:** every tool button shows its shortcut; press ? for the full list
 - Undo/redo, copy/paste, multi-select (shift-click or drag a box), drag handles,
   arrow-key nudge, tool lock, page thumbnails, drag-and-drop to open
 
@@ -31,14 +34,18 @@ PDF markup and takeoff for construction drawings. Windows and macOS desktop app
 
 | Key | Tool | Key | Tool |
 |---|---|---|---|
-| V | Select | Q | Callout |
-| H | Pan (or hold Space / middle-drag) | I | Highlight |
-| P | Pen | M | Length |
-| L | Line | N | Polylength |
-| A | Arrow | G | Area |
-| R | Rectangle | K | Count |
-| E | Ellipse | T | Text box |
-| C | Cloud | Esc | Cancel / finish count |
+| V | Select | T | Text box |
+| H | Pan (or hold Space / middle-drag) | Q | Callout |
+| P | Pen | I | Highlight |
+| L | Line | S | Calibrate scale |
+| Shift+L | Polyline | M | Length |
+| A | Arrow | N | Polylength |
+| R | Rectangle | G | Area |
+| Shift+R | Polygon | K | Count |
+| E | Ellipse | X | Full-screen crosshair |
+| C | Cloud | ? | Shortcut list |
+| Shift+C | Polygon cloud | Esc | Cancel / finish count |
+| B | Cloud+ | Z | Zoom to selection |
 
 Click-to-place tools (polyline, polygon, polygon cloud, polylength, area): click
 each vertex, then double-click or press Enter to finish. Backspace removes the
@@ -53,6 +60,7 @@ npm run app        # build, then run the desktop app
 npm test           # unit tests (PDF round trip, measurements)
 npm run test:e2e   # drives the real Electron app, screenshots in tests/e2e-out/
 node tests/e2e-view.mjs  # shape text + view options
+node tests/e2e-cloudplus.mjs  # Cloud+, shortcut badges, side-by-side, crosshair, snap to markup
 npm run dist:win   # Windows installer -> ../../../plandesk-release/<version>/
 npm run dist:mac   # macOS .dmg (run this on a Mac)
 ```

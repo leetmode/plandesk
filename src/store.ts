@@ -5,16 +5,18 @@ import { DEFAULT_STYLES } from './lib/markups';
 const HISTORY_LIMIT = 200;
 
 export interface ViewOptions {
-  layout: 'single' | 'continuous';
+  layout: 'single' | 'continuous' | 'sideBySide' | 'continuousSideBySide';
   rotation: 0 | 90 | 180 | 270;
   showMarkups: boolean;
   grid: boolean;
   snap: boolean;
   gridSpacing: number; // paper inches
   display: 'normal' | 'gray' | 'invert';
+  snapMarkup: boolean; // snap to points of existing markups
+  crosshair: boolean; // full-screen crosshair cursor
 }
 
-const DEFAULT_VIEW: ViewOptions = { layout: 'single', rotation: 0, showMarkups: true, grid: false, snap: false, gridSpacing: 0.25, display: 'normal' };
+const DEFAULT_VIEW: ViewOptions = { layout: 'single', rotation: 0, showMarkups: true, grid: false, snap: false, gridSpacing: 0.25, display: 'normal', snapMarkup: false, crosshair: false };
 
 interface Snapshot {
   markups: Markup[];
@@ -43,6 +45,7 @@ export interface DocState {
   showList: boolean;
   showThumbs: boolean;
   showProps: boolean;
+  showShortcuts: boolean;
   editingText: string | null;
   view: ViewOptions;
   sidebarTab: 'pages' | 'layers';
@@ -106,6 +109,7 @@ export const useDoc = create<DocState>((set, get) => ({
   showList: true,
   showThumbs: true,
   showProps: true,
+  showShortcuts: false,
   editingText: null,
   view: { ...DEFAULT_VIEW, ...(prefs.view ?? {}), rotation: 0 },
   sidebarTab: 'pages',

@@ -246,3 +246,21 @@ tr.sel { background: var(--accent-soft) !important; }
 .menu-item .label { flex: 1; text-align: left; }
 .menu-item .shortcut { color: var(--muted); font-size: 11px; }
 .menu-grid-size { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 8px 4px 30px; color: var(--muted); }
+
+/* side-by-side rows and the full-screen crosshair */
+.page-row { display: flex; align-items: flex-start; }
+.crosshair-h, .crosshair-v { position: absolute; pointer-events: none; background: #ff2d55; opacity: 0.85; z-index: 3; }
+.crosshair-h { left: 0; right: 0; height: 1px; }
+.crosshair-v { top: 0; bottom: 0; width: 1px; }
+
+/* shortcut key badges on tool buttons */
+.tb-group button { position: relative; }
+.kbd { display: inline-flex; align-items: center; gap: 1px; position: absolute; right: 0; bottom: 0; font-size: 8.5px; line-height: 1; padding: 1px 2px; border-radius: 3px; background: rgba(0, 0, 0, 0.55); color: #cfd6e0; font-weight: 600; pointer-events: none; }
+.tb-group button.active .kbd { background: #fff; color: #1f5fd6; }
+
+/* shortcuts cheat sheet */
+.modal.shortcuts { width: min(1000px, calc(100vw - 32px)); max-height: calc(100vh - 64px); overflow: auto; }
+.shortcut-cols { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px 24px; }
+.shortcut-cols h4 { margin: 8px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted, #8b95a5); }
+.shortcut-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; font-size: 13px; }
+.shortcut-row kbd { min-width: 34px; text-align: center; font: 600 11px/1.6 ui-monospace, Consolas, monospace; padding: 0 5px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; background: rgba(255, 255, 255, 0.06); white-space: nowrap; }
