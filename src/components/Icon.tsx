@@ -35,6 +35,9 @@ const PATHS: Record<string, string> = {
   prev: 'M15 18l-6-6 6-6',
   next: 'M9 18l6-6-6-6',
   download: 'M12 4v11M7 10l5 5 5-5M5 20h14',
+  eye: 'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zM12 9a3 3 0 100 6 3 3 0 000-6z',
+  rotateCw: 'M20 4v6h-6M20 10a8 8 0 10-2.3 5.7',
+  layers: 'M12 3l9 5-9 5-9-5zM3 13l9 5 9-5M3 17l9 5 9-5',
 };
 
 export function Icon({ name, size = 18 }: { name: string; size?: number }) {

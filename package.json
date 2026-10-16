@@ -1,7 +1,7 @@
 {
   "name": "plandesk",
   "productName": "PlanDesk",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "PDF markup and takeoff for construction plans",
   "private": true,
   "type": "module",
@@ -42,7 +42,7 @@
     "appId": "com.leetmode.plandesk",
     "productName": "PlanDesk",
     "directories": {
-      "output": "../../../plandesk-release",
+      "output": "../../../plandesk-release/${version}",
       "buildResources": "build"
     },
     "files": [

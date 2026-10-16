@@ -4,11 +4,13 @@ import type { Markup } from './types';
 import { openDocument, type PDFDocumentProxy } from './lib/pdfjs';
 import { loadPdf, savePdf } from './lib/pdfio';
 import * as platform from './lib/platform';
-import { newId, translate } from './lib/markups';
+import { newId, TEXT_SHAPES, translate } from './lib/markups';
 import { DEFAULT_SCALE } from './lib/measure';
 import { Toolbar, TOOL_KEYS } from './components/Toolbar';
 import { Viewer } from './components/Viewer';
-import { Thumbnails } from './components/Thumbnails';
+import { Sidebar } from './components/Thumbnails';
+import type { OcConfig } from './components/PageView';
+import { rotateView, toggleFullscreen } from './components/ViewMenu';
 import { Properties } from './components/Properties';
 import { MarkupsList } from './components/MarkupsList';
 import { ScaleDialog } from './components/ScaleDialog';
@@ -19,6 +21,7 @@ let clipboard: Markup[] = [];
 export default function App() {
   const s = useDoc();
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
+  const [oc, setOc] = useState<OcConfig | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -42,6 +45,8 @@ export default function App() {
       const doc = await openDocument(loaded.renderBytes);
       pdfRef.current?.loadingTask.destroy();
       pdfRef.current = doc;
+      const layers = await doc.getOptionalContentConfig().catch(() => null);
+      setOc(layers && [...layers].length ? layers : null);
       setPdf(doc);
       useDoc.getState().setDocument({
         fileName: file.name,
@@ -111,6 +116,11 @@ export default function App() {
         open();
         return;
       }
+      if (e.key === 'F11') {
+        e.preventDefault();
+        toggleFullscreen();
+        return;
+      }
       if (mod && k === 's') {
         e.preventDefault();
         save(e.shiftKey);
@@ -138,6 +148,23 @@ export default function App() {
         st.commit([...st.markups, ...pasted]);
         clipboard = pasted;
         useDoc.setState({ selection: pasted.map((m) => m.id), tool: 'select' });
+      } else if (mod && e.shiftKey && (e.code === 'Equal' || e.code === 'Minus')) {
+        e.preventDefault();
+        rotateView(e.code === 'Equal' ? 1 : -1);
+      } else if (mod && k === 'm') {
+        e.preventDefault();
+        st.setView({ showMarkups: !st.view.showMarkups });
+      } else if (mod && k === 'g') {
+        e.preventDefault();
+        st.setView({ grid: !st.view.grid });
+      } else if (!mod && k === 'z' && st.selection.length) {
+        useDoc.setState({ zoomCmd: { kind: 'selection', t: Date.now() } });
+      } else if (e.key === 'Enter' && st.selection.length === 1) {
+        const m = st.markups.find((x) => x.id === st.selection[0]);
+        if (m && (TEXT_SHAPES.has(m.type) || m.type === 'text' || m.type === 'callout')) {
+          e.preventDefault();
+          useDoc.setState({ editingText: m.id });
+        }
       } else if (mod && (k === '=' || k === '+')) {
         e.preventDefault();
         useDoc.setState({ zoomCmd: { kind: 'in', t: Date.now() } });
@@ -191,10 +218,10 @@ export default function App() {
     >
       <Toolbar onOpen={open} onSave={save} />
       <div className="main">
-        {s.showThumbs && <Thumbnails pdf={pdf} />}
+        {s.showThumbs && <Sidebar pdf={pdf} oc={oc} />}
         <div className="center">
           {pdf ? (
-            <Viewer pdf={pdf} />
+            <Viewer pdf={pdf} oc={oc} />
           ) : (
             <div className="welcome">
               <h1>PlanDesk</h1>
@@ -207,7 +234,7 @@ export default function App() {
           )}
           {s.showList && pdf && <MarkupsList />}
         </div>
-        <Properties />
+        {s.showProps && <Properties />}
       </div>
       <footer className="status">
         {pdf ? (

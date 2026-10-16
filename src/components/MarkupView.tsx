@@ -45,7 +45,7 @@ function MarkupViewImpl({ m, scale, interactive, hitWidth, hideText }: Props) {
           case 'text':
             if (hideText) return null;
             return (
-              <text key={i} x={part.x} fontSize={part.size} fill={m.color} fillOpacity={m.opacity} fontFamily="Helvetica, Arial, sans-serif">
+              <text key={i} x={part.x} fontSize={part.size} fill={m.color} fillOpacity={m.opacity} fontFamily="Helvetica, Arial, sans-serif" textAnchor={part.center ? 'middle' : undefined}>
                 {part.lines.map((ln, j) => (
                   <tspan key={j} x={part.x} y={part.y + part.size * (j + 0.85) + j * part.size * 0.2}>
                     {ln || ' '}

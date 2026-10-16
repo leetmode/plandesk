@@ -33,7 +33,7 @@ import {
   wrapText,
   type Seg,
 } from './geometry';
-import { calloutLeader, DEFAULT_STYLES, labelAnchor, newId, textBox, TYPE_LABEL } from './markups';
+import { calloutLeader, DEFAULT_STYLES, labelAnchor, LINE_HEIGHT, newId, shapeTextBox, TEXT_SHAPES, textBox, TYPE_LABEL } from './markups';
 import { DEFAULT_SCALE, isMetric, measureMarkup } from './measure';
 
 const KEY = PDFName.of('PlanDesk');
@@ -385,19 +385,20 @@ function strokeFill(segs: Seg[], m: Markup, d: Drawing, opts: { fill?: boolean; 
   if (stroke) d.ops.push('q /GSs gs', `${rg(m.color)} RG ${f3(m.width)} w 1 J 1 j`, path, 'S', 'Q');
 }
 
-function drawText(lines: string[], x: number, y: number, size: number, color: string, font: PDFFont, d: Drawing) {
+function drawText(lines: string[], x: number, y: number, size: number, color: string, font: PDFFont, d: Drawing, center = false) {
   // the page matrix flips y; the text matrix flips it back so glyphs stay upright
   d.ops.push('q /GSs gs BT', `/Helv ${f3(size)} Tf ${rg(color)} rg`);
   lines.forEach((line, i) => {
-    const baseline = y + size * (i + 0.85) + i * size * 0.2;
-    d.ops.push(`1 0 0 -1 ${f3(x)} ${f3(baseline)} Tm`, `${safeEncode(font, line)} Tj`);
+    const baseline = y + size * (0.85 + i * LINE_HEIGHT);
+    const lx = center ? x - font.widthOfTextAtSize(safeText(font, line), size) / 2 : x;
+    d.ops.push(`1 0 0 -1 ${f3(lx)} ${f3(baseline)} Tm`, `${safeEncode(font, line)} Tj`);
   });
   d.ops.push('ET Q');
 }
 
-function safeEncode(font: PDFFont, s: string): string {
-  // standard fonts are WinAnsi only; replace anything outside it
-  const clean = [...s].map((ch) => {
+// standard fonts are WinAnsi only; replace anything outside it
+function safeText(font: PDFFont, s: string): string {
+  return [...s].map((ch) => {
     try {
       font.encodeText(ch);
       return ch;
@@ -405,8 +406,9 @@ function safeEncode(font: PDFFont, s: string): string {
       return '?';
     }
   }).join('');
-  return font.encodeText(clean).toString();
 }
+
+const safeEncode = (font: PDFFont, s: string) => font.encodeText(safeText(font, s)).toString();
 
 function labelBox(label: string, at: Pt, size: number, font: PDFFont, m: Markup, d: Drawing) {
   const w = font.widthOfTextAtSize(label, size) + LABEL_PAD * 2;
@@ -419,7 +421,7 @@ function labelBox(label: string, at: Pt, size: number, font: PDFFont, m: Markup,
 
 export const textLines = (m: Markup, font: PDFFont) => {
   const b = textBox(m);
-  return wrapText(m.text, Math.max(10, b.w - 8), (s) => font.widthOfTextAtSize(s, m.fontSize));
+  return wrapText(m.text, Math.max(10, b.w - 8), (s) => font.widthOfTextAtSize(safeText(font, s), m.fontSize));
 };
 
 function draw(m: Markup, scale: PageScale, font: PDFFont): Drawing {
@@ -493,6 +495,12 @@ function draw(m: Markup, scale: PageScale, font: PDFFont): Drawing {
       drawText(textLines(m, font), b.x + 4, b.y + 4, m.fontSize, m.color, font, d);
       break;
     }
+  }
+  if (TEXT_SHAPES.has(m.type) && m.text.trim()) {
+    const b = shapeTextBox(m);
+    const lines = wrapText(m.text, b.w, (t) => font.widthOfTextAtSize(safeText(font, t), m.fontSize));
+    const blockH = lines.length * m.fontSize * LINE_HEIGHT;
+    drawText(lines, b.x + b.w / 2, b.y + (b.h - blockH) / 2, m.fontSize, m.color, font, d, true);
   }
   const meas = measureMarkup(m, scale);
   const anchor = labelAnchor(m);
@@ -577,7 +585,8 @@ export async function savePdf(baseBytes: Uint8Array, markups: Markup[], scales: 
       NM: PDFHexString.fromText(m.id),
       T: PDFHexString.fromText(m.author),
       Subj: PDFHexString.fromText(m.subject),
-      Contents: PDFHexString.fromText(m.type === 'text' || m.type === 'callout' ? m.text : m.comment),
+      // other viewers show Contents as the markup's text, so shapes with text use it too
+      Contents: PDFHexString.fromText(m.type === 'text' || m.type === 'callout' || (TEXT_SHAPES.has(m.type) && m.text) ? m.text : m.comment),
       M: PDFString.of(toPdfDate(m.modified)),
       CreationDate: PDFString.of(toPdfDate(m.created)),
       C: hexToRgb(m.color).map(f3),

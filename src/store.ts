@@ -4,6 +4,18 @@ import { DEFAULT_STYLES } from './lib/markups';
 
 const HISTORY_LIMIT = 200;
 
+export interface ViewOptions {
+  layout: 'single' | 'continuous';
+  rotation: 0 | 90 | 180 | 270;
+  showMarkups: boolean;
+  grid: boolean;
+  snap: boolean;
+  gridSpacing: number; // paper inches
+  display: 'normal' | 'gray' | 'invert';
+}
+
+const DEFAULT_VIEW: ViewOptions = { layout: 'single', rotation: 0, showMarkups: true, grid: false, snap: false, gridSpacing: 0.25, display: 'normal' };
+
 interface Snapshot {
   markups: Markup[];
   scales: Record<number, PageScale>;
@@ -30,9 +42,13 @@ export interface DocState {
   wheelZooms: boolean;
   showList: boolean;
   showThumbs: boolean;
+  showProps: boolean;
   editingText: string | null;
+  view: ViewOptions;
+  sidebarTab: 'pages' | 'layers';
+  layersVersion: number; // bumps when PDF layer visibility changes
   scaleDialog: { open: boolean; calibrated?: number }; // calibrated = drawn length in page units
-  zoomCmd: { kind: 'fitWidth' | 'fitPage' | 'in' | 'out' | 'actual'; t: number } | null;
+  zoomCmd: { kind: 'fitWidth' | 'fitPage' | 'in' | 'out' | 'actual' | 'selection'; t: number } | null;
   focusId: string | null; // markup the viewer should scroll into view
 
   setDocument(d: { fileName: string; filePath: string | null; baseBytes: Uint8Array; pageCount: number; markups: Markup[]; scales: Record<number, PageScale> }): void;
@@ -46,6 +62,7 @@ export interface DocState {
   redo(): void;
   set(p: Partial<DocState>): void;
   setStyle(type: MarkupType, patch: Partial<StyleDefaults>): void;
+  setView(patch: Partial<ViewOptions>): void;
 }
 
 const loadPrefs = () => {
@@ -57,9 +74,9 @@ const loadPrefs = () => {
 };
 const prefs = loadPrefs();
 
-export const savePrefs = (s: Pick<DocState, 'styles' | 'author' | 'wheelZooms'>) => {
+export const savePrefs = (s: Pick<DocState, 'styles' | 'author' | 'wheelZooms' | 'view'>) => {
   try {
-    localStorage.setItem('plandesk.prefs', JSON.stringify({ styles: s.styles, author: s.author, wheelZooms: s.wheelZooms }));
+    localStorage.setItem('plandesk.prefs', JSON.stringify({ styles: s.styles, author: s.author, wheelZooms: s.wheelZooms, view: s.view }));
   } catch {
     /* storage unavailable */
   }
@@ -88,7 +105,11 @@ export const useDoc = create<DocState>((set, get) => ({
   wheelZooms: prefs.wheelZooms ?? !isMac,
   showList: true,
   showThumbs: true,
+  showProps: true,
   editingText: null,
+  view: { ...DEFAULT_VIEW, ...(prefs.view ?? {}), rotation: 0 },
+  sidebarTab: 'pages',
+  layersVersion: 0,
   scaleDialog: { open: false },
   zoomCmd: null,
   focusId: null,
@@ -151,6 +172,11 @@ export const useDoc = create<DocState>((set, get) => ({
   },
 
   set: (p) => set(p),
+
+  setView: (patch) => {
+    set({ view: { ...get().view, ...patch } });
+    savePrefs(get());
+  },
 
   setStyle: (type, patch) => {
     set({ styles: { ...get().styles, [type]: { ...get().styles[type], ...patch } } });

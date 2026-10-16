@@ -10,13 +10,15 @@ const sample = path.join(root, 'samples', 'sample-floor-plan.pdf');
 const savedPath = out('saved.pdf');
 if (existsSync(savedPath)) rmSync(savedPath);
 
-const app = await electron.launch({ args: [root], cwd: root });
+const app = await electron.launch({ args: [root], cwd: root, env: { ...process.env, PLANDESK_USER_DATA: path.join(root, 'tests', 'e2e-out', 'profile') } });
 const page = await app.firstWindow();
 const errors = [];
 page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
 page.on('pageerror', (e) => errors.push(String(e)));
 page.on('requestfailed', (r) => errors.push(`request failed: ${r.url()} ${r.failure()?.errorText}`));
 await page.setViewportSize({ width: 1500, height: 950 }).catch(() => {});
+await page.evaluate(() => localStorage.clear());
+await page.reload();
 await page.waitForSelector('.welcome');
 await page.screenshot({ path: out('01-welcome.png') });
 

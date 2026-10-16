@@ -1,11 +1,28 @@
 // Builds samples/sample-floor-plan.pdf: a 36"x24" sheet drawn at 1/4" = 1'-0".
 import { writeFileSync } from 'node:fs';
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { PDFDocument, PDFName, PDFOperator, PDFString, StandardFonts, rgb } from 'pdf-lib';
 
 const doc = await PDFDocument.create();
 const font = await doc.embedFont(StandardFonts.Helvetica);
 const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 const FT = 18; // points per foot at 1/4" = 1'-0"
+
+// PDF layers (optional content groups), like the CAD layers in exported drawings
+const layerRefs = {};
+for (const name of ['Furniture', 'Dimensions']) {
+  layerRefs[name] = doc.context.register(doc.context.obj({ Type: 'OCG', Name: PDFString.of(name) }));
+}
+const allLayers = Object.values(layerRefs);
+doc.catalog.set(PDFName.of('OCProperties'), doc.context.obj({ OCGs: allLayers, D: { Order: allLayers, ON: allLayers } }));
+function onLayer(page, name, draw) {
+  const res = page.node.Resources();
+  let props = res.lookup(PDFName.of('Properties'));
+  if (!props) { props = doc.context.obj({}); res.set(PDFName.of('Properties'), props); }
+  props.set(PDFName.of(name), layerRefs[name]);
+  page.pushOperators(PDFOperator.of('BDC', [PDFName.of('OC'), PDFName.of(name)]));
+  draw();
+  page.pushOperators(PDFOperator.of('EMC'));
+}
 
 function sheet(title, number, draw) {
   const page = doc.addPage([2592, 1728]);
@@ -77,9 +94,23 @@ sheet('FLOOR PLAN', 'A-101', (page, ink) => {
     page.drawCircle({ x: p.x, y: p.y + 90, size: 20, borderColor: ink, borderWidth: 1.5 });
     page.drawText(String(i + 1), { x: p.x - 5, y: p.y + 84, size: 16, font: bold });
   }
-  dim(page, [0, 0], [96, 0], "96'-0\"", -4);
-  dim(page, [0, 0], [16, 0], "16'-0\"", -2);
-  dim(page, [0, 0], [0, 64], "64'-0\"", -4);
+  onLayer(page, 'Dimensions', () => {
+    dim(page, [0, 0], [96, 0], "96'-0\"", -4);
+    dim(page, [0, 0], [16, 0], "16'-0\"", -2);
+    dim(page, [0, 0], [0, 64], "64'-0\"", -4);
+  });
+  onLayer(page, 'Furniture', () => {
+    const furn = rgb(0.45, 0.45, 0.6);
+    for (const x of [3, 19, 35]) {
+      for (const y of [44, 20]) {
+        const p = P(x, y);
+        page.drawRectangle({ x: p.x, y: p.y, width: 6 * FT, height: 2.5 * FT, borderColor: furn, borderWidth: 1 });
+        page.drawCircle({ x: p.x + 3 * FT, y: p.y + 4 * FT, size: FT, borderColor: furn, borderWidth: 1 });
+      }
+    }
+    const t = P(54, 48);
+    page.drawRectangle({ x: t.x, y: t.y, width: 12 * FT, height: 4 * FT, borderColor: furn, borderWidth: 1 });
+  });
   page.drawText('FLOOR PLAN', { x: ox, y: 120, size: 28, font: bold });
   page.drawText('SCALE: 1/4" = 1\'-0"', { x: ox, y: 92, size: 16, font });
 });

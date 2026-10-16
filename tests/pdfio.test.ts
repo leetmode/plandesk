@@ -129,6 +129,22 @@ describe('pdf round trip', () => {
   });
 });
 
+describe('text in shapes', () => {
+  it('saves shape text so other viewers see it, and reads it back', async () => {
+    const base = await blankPdf([0]);
+    const cloud = makeMarkup('cloud', 0, [{ x: 100, y: 100 }, { x: 400, y: 300 }], DEFAULT_STYLES.cloud, 'T');
+    cloud.text = 'REVISE PER ASI-03 — café';
+    cloud.comment = 'internal note';
+    const saved = await savePdf(base, [cloud], {});
+    const doc = await PDFDocument.load(saved);
+    const annot = doc.context.lookup(doc.getPages()[0].node.Annots()!.get(0)) as never as { get(n: PDFName): { decodeText(): string } };
+    expect(annot.get(PDFName.of('Contents')).decodeText()).toBe(cloud.text);
+    const back = (await loadPdf(saved)).markups[0];
+    expect(back.text).toBe(cloud.text);
+    expect(back.comment).toBe('internal note');
+  });
+});
+
 describe('measurement', () => {
   it('formats and parses construction lengths', () => {
     expect(formatLength(150.5, 'ft-in')).toBe("12'-6 1/2\"");

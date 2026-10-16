@@ -1,6 +1,7 @@
 import { useDoc } from '../store';
 import type { Tool } from '../types';
 import { Icon } from './Icon';
+import { rotateView, ViewMenu } from './ViewMenu';
 
 export const TOOL_KEYS: Record<string, Tool> = {
   v: 'select',
@@ -106,6 +107,12 @@ export function Toolbar({ onOpen, onSave }: Props) {
         </button>
       </div>
       <div className="tb-spacer" />
+      <div className="tb-group">
+        <ViewMenu />
+        <button title="Rotate view clockwise (Ctrl+Shift+=)" disabled={!hasDoc} onClick={() => rotateView(1)}>
+          <Icon name="rotateCw" />
+        </button>
+      </div>
       <div className="tb-group">
         <button title="Zoom out" disabled={!hasDoc} onClick={() => useDoc.setState({ zoomCmd: { kind: 'out', t: Date.now() } })}>
           <Icon name="zoomOut" />

@@ -12,6 +12,9 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
 ]);
 
+// separate profile (and single-instance lock) for automated tests
+if (process.env.PLANDESK_USER_DATA) app.setPath('userData', process.env.PLANDESK_USER_DATA);
+
 let win = null;
 let dirty = false;
 let pendingPath = null;

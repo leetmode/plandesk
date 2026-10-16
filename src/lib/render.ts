@@ -13,18 +13,23 @@ import {
   wrapText,
   type Box,
 } from './geometry';
-import { calloutLeader, labelAnchor, textBox } from './markups';
+import { calloutLeader, labelAnchor, LINE_HEIGHT, shapeTextBox, TEXT_SHAPES, textBox } from './markups';
 import { measureMarkup } from './measure';
 
 export type Part =
   | { kind: 'path'; d: string; stroke: boolean; fill: string | null; fillOpacity?: number; blend?: boolean }
   | { kind: 'solid'; d: string } // filled with the markup color (arrowheads)
-  | { kind: 'text'; x: number; y: number; lines: string[]; size: number }
+  | { kind: 'text'; x: number; y: number; lines: string[]; size: number; center?: boolean }
   | { kind: 'label'; at: Pt; text: string; size: number };
 
 export function textLayout(m: Markup, measure: (s: string, size: number) => number): { box: Box; lines: string[] } {
   const box = textBox(m);
   return { box, lines: wrapText(m.text, Math.max(10, box.w - 8), (s) => measure(s, m.fontSize)) };
+}
+
+export function shapeTextLayout(m: Markup, measure: (s: string, size: number) => number): { box: Box; lines: string[] } {
+  const box = shapeTextBox(m);
+  return { box, lines: wrapText(m.text, box.w, (s) => measure(s, m.fontSize)) };
 }
 
 export function planMarkup(m: Markup, scale: PageScale, measure: (s: string, size: number) => number): Part[] {
@@ -93,6 +98,12 @@ export function planMarkup(m: Markup, scale: PageScale, measure: (s: string, siz
       out.push({ kind: 'text', x: box.x + 4, y: box.y + 4, lines, size: m.fontSize });
       break;
     }
+  }
+
+  if (TEXT_SHAPES.has(m.type) && m.text.trim()) {
+    const { box, lines } = shapeTextLayout(m, measure);
+    const blockH = lines.length * m.fontSize * LINE_HEIGHT;
+    out.push({ kind: 'text', x: box.x + box.w / 2, y: box.y + (box.h - blockH) / 2, lines, size: m.fontSize, center: true });
   }
 
   const meas = measureMarkup(m, scale);

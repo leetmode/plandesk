@@ -114,3 +114,25 @@ export function labelAnchor(m: Markup): Pt | null {
 export function translate(m: Markup, dx: number, dy: number): Markup {
   return { ...m, points: m.points.map((p) => ({ x: p.x + dx, y: p.y + dy })) };
 }
+
+// Closed shapes that can hold centered text (double-click to type).
+export const TEXT_SHAPES = new Set<MarkupType>(['rect', 'ellipse', 'cloud', 'polycloud', 'polygon']);
+
+export function shapeTextBox(m: Markup): Box {
+  const b = m.type === 'polycloud' || m.type === 'polygon' ? boundsOf(m.points) : boxFrom(m.points[0], m.points[1] ?? m.points[0]);
+  // keep text inside the curve of an ellipse
+  const k = m.type === 'ellipse' ? 0.7 : 1;
+  const inset = 4 + m.width;
+  const w = Math.max(10, b.w * k - inset * 2);
+  const h = Math.max(10, b.h * k - inset * 2);
+  return { x: b.x + (b.w - w) / 2, y: b.y + (b.h - h) / 2, w, h };
+}
+
+function boundsOf(pts: Pt[]): Box {
+  const xs = pts.map((p) => p.x), ys = pts.map((p) => p.y);
+  const x = Math.min(...xs), y = Math.min(...ys);
+  return { x, y, w: Math.max(...xs) - x, h: Math.max(...ys) - y };
+}
+
+// Line height used everywhere text is laid out (screen and PDF).
+export const LINE_HEIGHT = 1.2;

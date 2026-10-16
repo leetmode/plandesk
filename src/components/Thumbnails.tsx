@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import type { PDFDocumentProxy } from '../lib/pdfjs';
 import { useDoc } from '../store';
+import { LayersPanel } from './LayersPanel';
+import type { OcConfig } from './PageView';
 
 const THUMB_W = 150;
 
@@ -39,18 +41,33 @@ function Thumb({ pdf, index, active, count }: { pdf: PDFDocumentProxy; index: nu
   );
 }
 
-export function Thumbnails({ pdf }: { pdf: PDFDocumentProxy | null }) {
+export function Sidebar({ pdf, oc }: { pdf: PDFDocumentProxy | null; oc: OcConfig | null }) {
   const pageCount = useDoc((s) => s.pageCount);
   const page = useDoc((s) => s.page);
   const markups = useDoc((s) => s.markups);
+  const tab = useDoc((s) => s.sidebarTab);
   if (!pdf) return null;
   const counts = new Map<number, number>();
   for (const m of markups) counts.set(m.page, (counts.get(m.page) ?? 0) + 1);
   return (
-    <aside className="thumbs">
-      {Array.from({ length: pageCount }, (_, i) => (
-        <Thumb key={i} pdf={pdf} index={i} active={i === page} count={counts.get(i) ?? 0} />
-      ))}
+    <aside className="sidebar">
+      <div className="tabs sidebar-tabs">
+        <button className={tab === 'pages' ? 'active' : ''} onClick={() => useDoc.setState({ sidebarTab: 'pages' })}>
+          Pages
+        </button>
+        <button className={tab === 'layers' ? 'active' : ''} onClick={() => useDoc.setState({ sidebarTab: 'layers' })}>
+          Layers
+        </button>
+      </div>
+      {tab === 'pages' ? (
+        <div className="thumbs">
+          {Array.from({ length: pageCount }, (_, i) => (
+            <Thumb key={i} pdf={pdf} index={i} active={i === page} count={counts.get(i) ?? 0} />
+          ))}
+        </div>
+      ) : (
+        <LayersPanel oc={oc} />
+      )}
     </aside>
   );
 }
