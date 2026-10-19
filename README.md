@@ -12,9 +12,12 @@ Get the latest installers from the [Releases page](https://github.com/leetmode/p
 - **Mac (Apple Silicon M1/M2/M3/M4):** `PlanDesk-<version>-arm64.dmg`
 - **Mac (Intel):** `PlanDesk-<version>-x64.dmg`
 
-  Open the .dmg and drag PlanDesk to Applications. The first time, macOS will block it
-  because it isn't notarized: right-click PlanDesk in Applications → **Open** → **Open**.
-  If it says the app "is damaged", run `xattr -cr /Applications/PlanDesk.app` in Terminal.
+  Open the .dmg and drag PlanDesk to Applications. The first time you open it, macOS says it
+  can't verify the developer, because the app isn't notarized yet: click **Done**, then open
+  **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to
+  PlanDesk, and confirm. After that it opens normally.
+  Versions before 0.2.4 showed "PlanDesk is damaged" instead (broken signature, issue #1); if an
+  old copy does that, install 0.2.4 or later, or run `xattr -cr /Applications/PlanDesk.app`.
 
 Installers are built by GitHub Actions whenever a version tag is pushed:
 `npm version patch && git push --follow-tags`.

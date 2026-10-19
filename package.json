@@ -90,6 +90,7 @@
       "icon": "build/icon.png",
       "category": "public.app-category.productivity",
       "artifactName": "PlanDesk-${version}-${arch}.dmg"
-    }
+    },
+    "afterPack": "build/adhoc-sign.cjs"
   }
 }
