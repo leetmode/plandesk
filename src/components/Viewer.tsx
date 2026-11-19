@@ -3,6 +3,7 @@ import type { PDFDocumentProxy } from '../lib/pdfjs';
 import { useDoc } from '../store';
 import type { Pt } from '../types';
 import { bounds } from '../lib/geometry';
+import { LaserOverlay } from './LaserOverlay';
 import { PageView, type OcConfig, type Size, clientToPage, pageToClient, keys } from './PageView';
 
 const PAD = 24;
@@ -309,6 +310,7 @@ export function Viewer({ pdf, oc }: Props) {
           ))}
         </div>
       </div>
+      {tool === 'laser' && <LaserOverlay scrollRef={scrollRef} />}
       {view.crosshair && hair && (
         <>
           <div className="crosshair-h" style={{ top: hair.y }} />

@@ -7,6 +7,7 @@ import { rotateView, ViewMenu } from './ViewMenu';
 export const TOOL_KEYS: Record<string, Tool> = {
   v: 'select',
   h: 'pan',
+  d: 'laser',
   p: 'pen',
   l: 'line',
   a: 'arrow',
@@ -51,7 +52,14 @@ function KeyBadge({ k }: { k: string }) {
 }
 
 export const GROUPS: { label: string; tools: { id: Tool; title: string }[] }[] = [
-  { label: 'Navigate', tools: [{ id: 'select', title: 'Select' }, { id: 'pan', title: 'Pan' }] },
+  {
+    label: 'Navigate',
+    tools: [
+      { id: 'select', title: 'Select' },
+      { id: 'pan', title: 'Pan' },
+      { id: 'laser', title: 'Laser pointer for presenting: hold the mouse button to circle things - the red trail fades after a few seconds. Nothing is saved' },
+    ],
+  },
   {
     label: 'Markup',
     tools: [

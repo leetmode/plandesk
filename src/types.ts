@@ -62,6 +62,6 @@ export interface PageScale {
   label: string;
 }
 
-export type Tool = MarkupType | 'select' | 'pan' | 'calibrate';
+export type Tool = MarkupType | 'select' | 'pan' | 'calibrate' | 'laser';
 
 export type StyleDefaults = Pick<Markup, 'color' | 'fill' | 'opacity' | 'fillOpacity' | 'width' | 'fontSize' | 'subject'>;

@@ -13,7 +13,7 @@ PDF.js for rendering, pdf-lib for saving. Windows and macOS. Repo: github.com/le
 2. `npm install` after pulling if package-lock.json changed.
 3. Make the change, then run: `npm run typecheck`, `npm test`, and the e2e scripts that touch the area:
    `npm run build && node tests/e2e.mjs` (markups/measurements), `node tests/e2e-view.mjs` (view options,
-   shape text), `node tests/e2e-cloudplus.mjs` (Cloud+, shortcuts, layouts, notes), `node tests/e2e-tabs.mjs` (tabs), `node tests/e2e-report.mjs` (review report). Check the screenshots
+   shape text), `node tests/e2e-cloudplus.mjs` (Cloud+, shortcuts, layouts, notes), `node tests/e2e-tabs.mjs` (tabs), `node tests/e2e-report.mjs` (review report), `node tests/e2e-laser.mjs` (laser pointer). Check the screenshots
    in tests/e2e-out/ and that `errors` is empty.
 4. Commit and push.
 5. To ship installers: `npm version patch` (or minor) then `git push --follow-tags`. GitHub Actions
@@ -31,6 +31,8 @@ PDF.js for rendering, pdf-lib for saving. Windows and macOS. Repo: github.com/le
 - src/tabs.ts: open documents. The active tab's document lives in useDoc; inactive tabs keep a parked
   snapshot of the per-document fields (DOC_KEYS). Add new per-document store fields to DOC_KEYS.
 - src/components/PageView.tsx: drawing/selection interactions per page. Viewer.tsx: scrolling, zoom, layouts.
+- src/components/LaserOverlay.tsx: presenting laser (tool 'laser'). Not a markup: a canvas over the viewer,
+  pointer events stopped at the viewer in the capture phase so PageView never sees them.
 - Toolbar.tsx `TOOL_KEYS` is the single source of tool shortcuts (badges and the ? cheat sheet read it).
 - Every new markup type needs: types.ts, TYPE_LABEL + DEFAULT_STYLES, render.ts, pdfio.ts draw + SUBTYPE,
   hit testing in PageView, an icon, and a unit test round trip in tests/pdfio.test.ts.

@@ -1,6 +1,7 @@
 // Small stroke icon set (24x24 grid).
 const PATHS: Record<string, string> = {
   select: 'M5 3l13 8-6 1.5L9 19z',
+  laser: 'M14 10l7-7M17 3h4v4M10 10a4 4 0 100 8 4 4 0 000-8zM4 20l2.5-2.5M2 14h2M10 22v-2',
   pan: 'M8 11V5.5a1.5 1.5 0 013 0V11m0-1V4.5a1.5 1.5 0 013 0V11m0-.5V6a1.5 1.5 0 013 0v7c0 4-2.5 7-6.5 7S6 18 4.5 15l-1-2a1.5 1.5 0 012.6-1.5L8 14',
   pen: 'M4 20c3-1 4-4 7-8s6-7 9-8c-1 3-4 6-8 9s-7 4-8 7z',
   line: 'M5 19L19 5',

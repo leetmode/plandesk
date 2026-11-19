@@ -22,8 +22,13 @@ Get the latest installers from the [Releases page](https://github.com/leetmode/p
 Installers are built by GitHub Actions whenever a version tag is pushed:
 `npm version patch && git push --follow-tags`.
 
-## Features (v0.2.3)
+## Features (v0.3.0)
 
+- **Laser pointer for presenting (D):** a red laser dot follows the mouse; hold the button and
+  drag to circle or underline things. The trail stays on screen for about 2 seconds after you let
+  go, then fades out. Nothing is added to the drawing or saved into the PDF. Works in full screen
+  (F11); middle-drag or Space+drag still pans and the wheel still scrolls and zooms. Esc goes back
+  to Select
 - **Markups:** pen, line, arrow, rectangle, ellipse, polyline, polygon, revision
   cloud (rectangle and polygon), Cloud+ (cloud with a leader to a text box),
   highlight, text box, callout, sticky note

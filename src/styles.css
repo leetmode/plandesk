@@ -249,6 +249,9 @@ tr.sel { background: var(--accent-soft) !important; }
 
 /* side-by-side rows and the full-screen crosshair */
 .page-row { display: flex; align-items: flex-start; }
+/* laser pointer (presenting): canvas over the viewer, events handled on the viewer itself */
+.laser-canvas { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 4; }
+.viewer.laser-on, .viewer.laser-on * { cursor: none !important; }
 .crosshair-h, .crosshair-v { position: absolute; pointer-events: none; background: #ff2d55; opacity: 0.85; z-index: 3; }
 .crosshair-h { left: 0; right: 0; height: 1px; }
 .crosshair-v { top: 0; bottom: 0; width: 1px; }
